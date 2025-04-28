@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Patrón de fondo para login: coloca la imagen en /public/pattern-login.png */
+.login-bg {
+  @apply bg-[url('/pattern-login.png')] bg-center bg-cover;
+}
