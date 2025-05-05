@@ -1,0 +1,32 @@
+name: Node.js CI
+
+# Se ejecutará en los siguientes eventos: 
+on:
+  push:
+    branches: 
+      - main  # se ejecuta solo cuando se hace un push a la rama main
+  pull_request:
+    branches: 
+      - main  # también cuando hay un pull request hacia la rama main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Usa un contenedor de Ubuntu para la ejecución
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3  # Obtiene el código de tu repositorio
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3  # Configura la versión de Node.js
+      with:
+        node-version: '18'  # Puedes ajustar la versión de Node.js si es necesario
+
+    - name: Install dependencies
+      run: npm install  # Instala las dependencias de tu proyecto
+
+    - name: Run tests
+      run: npm test  # Ejecuta las pruebas (ajusta esto si usas otro framework de pruebas)
+
+    - name: Build
+      run: npm run build  # Compila tu proyecto (ajusta si usas otro script)
