@@ -34,11 +34,11 @@ function Dashboard() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* YA NO Navbar aquí */}
-      <div className="flex flex-1">
+      <div className="flex flex-col md:flex-row flex-1">
         {/* Sidebar */}
-        <aside className="w-64 bg-primary text-white p-6">
+        <aside className="w-full md:w-64 bg-primary text-white p-6">
           <h3 className="text-xl font-bold mb-4">CHAN Tiendas</h3>
-          <p className="mb-2">Hola, Bienvenido a su panel de control{profile.nombre}</p>
+          <p className="mb-2">Hola, Bienvenido a su panel de control {profile.nombre}</p>
         </aside>
 
         {/* Main Content */}
