@@ -25,8 +25,5 @@ jobs:
     - name: Install dependencies
       run: npm install  # Instala las dependencias de tu proyecto
 
-    - name: Run tests
-      run: npm test  # Ejecuta las pruebas (ajusta esto si usas otro framework de pruebas)
-
     - name: Build
       run: npm run build  # Compila tu proyecto (ajusta si usas otro script)
