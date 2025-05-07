@@ -7,7 +7,7 @@ import MachinesPage from "./pages/MachinesPage";
 import UsersPage from "./pages/UsersPage";
 import ReportsPage from "./pages/ReportsPage";
 import ProductForm from "./components/ProductForm"; // ← NUEVO IMPORTANTE
-import Navbar from "./components/Navbar";
+import Navbar from "./components/navbar";
 import { useUser } from "./contexts/UserContext";
 
 function App() {
