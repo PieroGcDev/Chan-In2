@@ -6,14 +6,15 @@ import ProductsPage from "./pages/ProductsPage";
 import MachinesPage from "./pages/MachinesPage";
 import UsersPage from "./pages/UsersPage";
 import ReportsPage from "./pages/ReportsPage";
-import Navbar from "./components/navbar"; // Asegúrate que la ruta es correcta
-import { useUser } from "./contexts/UserContext"; // Agregado
+import ProductForm from "./components/ProductForm"; // ← NUEVO IMPORTANTE
+import Navbar from "./components/Navbar";
+import { useUser } from "./contexts/UserContext";
 
 function App() {
   const { user } = useUser();
-  const role = user?.role || "guest"; // default guest si no está logueado
+  const role = user?.role || "guest";
 
-  if (user === undefined) return <div>Loading...</div>; // Agregar un loading mientras se resuelve el estado
+  if (user === undefined) return <div>Loading...</div>;
 
   return (
     <BrowserRouter>
@@ -23,7 +24,9 @@ function App() {
         {user && (
           <>
             <Route path="/dashboard" element={<Dashboard />} />
+            {role === "admin" && <Route path="/admin/products/edit/:id" element={<ProductForm />} />}
             {role === "admin" && <Route path="/products" element={<ProductsPage />} />}
+            {role === "admin" && <Route path="/admin/products/new" element={<ProductForm />} />}
             {role === "admin" && <Route path="/machines" element={<MachinesPage />} />}
             {role === "admin" && <Route path="/users" element={<UsersPage />} />}
             {(role === "admin" || role === "colaborator") && (

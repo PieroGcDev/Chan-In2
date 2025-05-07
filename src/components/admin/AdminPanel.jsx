@@ -1,5 +1,4 @@
 import React from "react";
-import ProductManager from "./ProductManager";
 
 function AdminPanel() {
   return (
@@ -7,7 +6,8 @@ function AdminPanel() {
       <h2 className="text-xl font-bold text-primary mb-4">
         Panel de Administrador
       </h2>
-      <ProductManager />
+      {/* Puedes agregar aquí otros componentes o estadísticas */}
+      <p>Bienvenido al panel de administrador. Desde aquí puedes gestionar el sistema.</p>
     </div>
   );
 }

@@ -1,12 +1,16 @@
 import React from "react";
-import BarcodeScanner from "./BarcodeScanner";
+import Navbar from "../Navbar"; // Asegúrate que esta ruta sea correcta
+import BarcodeScanner from "../../components/collaborator/BarcodeScanner";
 
-function CollaboratorPanel() {
+const CollaboratorPanel = () => {
   return (
     <div>
-      <BarcodeScanner />
+      <Navbar />
+      <main className="p-6">
+        <BarcodeScanner />
+      </main>
     </div>
   );
-}
+};
 
 export default CollaboratorPanel;
