@@ -1,71 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { signIn } from "../services/authService";
+import { useUser } from "../contexts/UserContext";
 import "../index.css";
-import { useUser } from "../contexts/UserContext"; // Agregado
-import { supabase } from "../supabaseClient"; // Agregado
 
 function Login() {
-  const { login } = useUser();
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const [attempts, setAttempts] = useState(0);
+  const navigate = useNavigate();
+  const { login } = useUser();
+
+  const MAX_ATTEMPTS = 5;
+
+  // Cargar intentos desde localStorage
+  useEffect(() => {
+    const savedAttempts = localStorage.getItem("loginAttempts");
+    if (savedAttempts) {
+      setAttempts(parseInt(savedAttempts));
+    }
+  }, []);
+
+  // Guardar en localStorage cada vez que cambia
+  useEffect(() => {
+    localStorage.setItem("loginAttempts", attempts);
+  }, [attempts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (attempts >= MAX_ATTEMPTS) {
+      setError("Has excedido el límite de intentos. Intenta más tarde.");
+      return;
+    }
+
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-  
-      if (signInError) {
-        setError(signInError.message);
-        return;
-      }
-  
-      const userId = data.user.id;
-  
-      // Obtener role_id desde la tabla users
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('role_id') // Solo seleccionamos el campo role_id
-        .eq('id', userId) // Asegúrate de que estés usando el campo correcto
-        .single();
-  
-      if (profileError) {
-        setError(profileError.message);
-        return;
-      }
-  
-      const roleId = userProfile.role_id; // Aquí obtienes el role_id del usuario
-  
-      // Ahora hacer otra consulta para obtener el nombre del rol
-      const { data: roleData, error: roleError } = await supabase
-        .from('roles')
-        .select('name')
-        .eq('id', roleId) // Usamos el role_id para obtener el nombre del rol
-        .single();
-  
-      if (roleError) {
-        setError(roleError.message);
-        return;
-      }
-  
-      const roleName = roleData.name; // Aquí obtienes el nombre del rol
-  
-      // Ahora que tienes el nombre del rol, lo puedes usar en el login
-      login({
-        id: userId,
-        email: data.user.email,
-        role: roleName, // Aquí usas el nombre del rol
-      });
-  
+      const userData = await signIn(email, password);
+      login(userData);
+      console.log("Inicio de sesión exitoso, redirigiendo...");
+      localStorage.removeItem("loginAttempts"); // ← Reinicia si fue exitoso
       navigate("/dashboard");
-  
     } catch (err) {
-      console.error(err);
-      setError("Error de inicio de sesión");
+      console.error("Error al iniciar sesión:", err.message);
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      if (newAttempts >= MAX_ATTEMPTS) {
+        setError("Has excedido el límite de intentos. Intenta más tarde.");
+      } else {
+        setError("Credenciales inválidas");
+      }
     }
   };
 
@@ -79,6 +62,7 @@ function Login() {
           Bienvenido
         </h2>
         {error && <p className="text-red-500 mb-4">{error}</p>}
+
         <label className="block mb-1 font-medium text-secondary">Email</label>
         <input
           type="email"
@@ -88,20 +72,27 @@ function Login() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+
         <label className="block mb-1 font-medium text-secondary">
           Contraseña
         </label>
         <input
           type="password"
           className="w-full mb-6 p-2 rounded border border-gray-200 focus:border-primary focus:outline-none"
-          placeholder="********"
+          placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+
         <button
           type="submit"
-          className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2 rounded transition"
+          disabled={attempts >= MAX_ATTEMPTS}
+          className={`w-full font-semibold py-2 rounded transition ${
+            attempts >= MAX_ATTEMPTS
+              ? "bg-gray-400 cursor-not-allowed text-white"
+              : "bg-primary hover:bg-primary-dark text-white"
+          }`}
         >
           Ingresar
         </button>

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { fetchProducts, deleteProduct } from "../services/productService";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const { user } = useUser();
+  const role = user?.role || "guest";
 
   const loadProducts = async () => {
     try {
@@ -26,7 +29,7 @@ export default function ProductsPage() {
 
     try {
       await deleteProduct(id);
-      await loadProducts(); // refrescar la tabla
+      await loadProducts(); // refrescar
     } catch (error) {
       console.error("Error al eliminar producto:", error);
     }
@@ -42,12 +45,14 @@ export default function ProductsPage() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-primary">Gestión de Productos</h2>
-        <button
-          onClick={() => navigate("/admin/products/new")}
-          className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded"
-        >
-          Añadir Producto
-        </button>
+        {role === "admin" && (
+          <button
+            onClick={() => navigate("/admin/products/new")}
+            className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded"
+          >
+            Añadir Producto
+          </button>
+        )}
       </div>
 
       <div className="flex mb-4">
@@ -74,7 +79,7 @@ export default function ProductsPage() {
               <th className="p-2">Precio</th>
               <th className="p-2">Código de barras</th>
               <th className="p-2">Creado</th>
-              <th className="p-2">Acciones</th>
+              {role === "admin" && <th className="p-2">Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -89,20 +94,22 @@ export default function ProductsPage() {
                 <td className="p-2">
                   {p.created_at ? new Date(p.created_at).toLocaleDateString() : ""}
                 </td>
-                <td className="p-2 space-x-2">
-                  <button
-                    className="text-blue-500 hover:underline"
-                    onClick={() => navigate(`/admin/products/edit/${p.id}`)}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="text-red-500 hover:underline"
-                    onClick={() => handleDelete(p.id)}
-                  >
-                    🗑️
-                  </button>
-                </td>
+                {role === "admin" && (
+                  <td className="p-2 space-x-2">
+                    <button
+                      className="text-blue-500 hover:underline"
+                      onClick={() => navigate(`/admin/products/edit/${p.id}`)}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="text-red-500 hover:underline"
+                      onClick={() => handleDelete(p.id)}
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

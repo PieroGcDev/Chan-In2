@@ -5,7 +5,6 @@ import BarcodeScanner from "../../components/collaborator/BarcodeScanner";
 const CollaboratorPanel = () => {
   return (
     <div>
-      <Navbar />
       <main className="p-6">
         <BarcodeScanner />
       </main>
