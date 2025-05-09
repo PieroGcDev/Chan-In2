@@ -11,10 +11,16 @@ function Login() {
   const [attempts, setAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const navigate = useNavigate();
-  const { login } = useUser();
+  const { login, user } = useUser();
 
   const MAX_ATTEMPTS = 5;
   const BLOCK_DURATION_MINUTES = 5;
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     const checkBlockStatus = () => {
@@ -126,11 +132,8 @@ function Login() {
           Ingresar
         </button>
 
-        <div className="mt-4 text-sm text-center">
-          <a
-            href="/reset-password"
-            className="text-primary hover:underline"
-          >
+        <div className="text-center mt-4">
+          <a href="/reset-password" className="text-sm text-primary hover:underline">
             ¿Olvidaste tu contraseña?
           </a>
         </div>
