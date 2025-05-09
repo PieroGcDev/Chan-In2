@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn } from "../services/authService";
+import { signIn, resetPassword } from "../services/authService";
 import { useUser } from "../contexts/UserContext";
 import "../index.css";
 
@@ -11,23 +11,12 @@ function Login() {
   const [success, setSuccess] = useState(null);
   const [attempts, setAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user, login } = useUser();
+  const { login } = useUser();
 
   const MAX_ATTEMPTS = 5;
   const BLOCK_DURATION_MINUTES = 5;
 
-  // Redirección automática si ya hay sesión
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard", { replace: true });
-    } else {
-      setLoading(false);
-    }
-  }, [user, navigate]);
-
-  // Control de bloqueo y temporizador
   useEffect(() => {
     const checkBlockStatus = () => {
       const savedAttempts = parseInt(localStorage.getItem("loginAttempts")) || 0;
@@ -44,7 +33,7 @@ function Login() {
           const minutes = Math.floor(remainingMs / 60000);
           const seconds = Math.floor((remainingMs % 60000) / 1000);
           setIsBlocked(true);
-          setError(`Demasiados intentos. Intenta en ${minutes}:${seconds.toString().padStart(2, '0')} minutos.`);
+          setError(`Demasiados intentos. Intenta en ${minutes}:${seconds.toString().padStart(2, "0")} minutos.`);
         } else {
           localStorage.removeItem("loginAttempts");
           localStorage.removeItem("lastAttemptTime");
@@ -73,13 +62,12 @@ function Login() {
     try {
       const userData = await signIn(email, password);
       login(userData);
+      setSuccess("Inicio de sesión exitoso ✨");
+      setError(null);
       localStorage.removeItem("loginAttempts");
       localStorage.removeItem("lastAttemptTime");
-      setSuccess("Inicio de sesión exitoso 🎉");
-      setError(null);
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+
+      setTimeout(() => navigate("/dashboard"), 2000);
     } catch (err) {
       console.error("Error al iniciar sesión:", err.message);
       const newAttempts = attempts + 1;
@@ -87,7 +75,6 @@ function Login() {
       localStorage.setItem("loginAttempts", newAttempts);
       localStorage.setItem("lastAttemptTime", new Date().toISOString());
 
-      setSuccess(null);
       if (newAttempts >= MAX_ATTEMPTS) {
         setIsBlocked(true);
         setError("Has excedido el límite de intentos. Intenta nuevamente en 5 minutos.");
@@ -97,30 +84,35 @@ function Login() {
     }
   };
 
-  if (loading) return null;
+  const handlePasswordReset = async () => {
+    if (!email) {
+      setError("Ingresa tu correo arriba para recuperar la contraseña.");
+      return;
+    }
+
+    try {
+      await resetPassword(email);
+      setSuccess("Se envió un enlace de recuperación a tu correo.");
+      setError(null);
+    } catch (err) {
+      console.error("Error al enviar enlace:", err.message);
+      setError("No se pudo enviar el enlace. Verifica tu correo.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center login-bg">
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md transition-all duration-300 ease-in-out"
+        className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md"
       >
-        <h2 className="text-2xl font-bold text-primary text-center mb-6">
-          Bienvenido
-        </h2>
+        <h2 className="text-2xl font-bold text-primary text-center mb-4">Bienvenido</h2>
 
-        {/* Mensaje de éxito */}
         {success && (
-          <p className="mb-4 text-green-600 text-center animate-fade-in">
-            {success}
-          </p>
+          <p className="text-green-600 text-center mb-4 animate-pulse">{success}</p>
         )}
-
-        {/* Mensaje de error */}
         {error && (
-          <p className="mb-4 text-red-500 text-center animate-fade-in">
-            {error}
-          </p>
+          <p className="text-red-500 text-center mb-4">{error}</p>
         )}
 
         <label className="block mb-1 font-medium text-secondary">Email</label>
@@ -133,51 +125,34 @@ function Login() {
           required
         />
 
-        <label className="block mb-1 font-medium text-secondary">
-          Contraseña
-        </label>
+        <label className="block mb-1 font-medium text-secondary">Contraseña</label>
         <input
           type="password"
-          className="w-full p-2 mb-2 rounded border border-gray-200 focus:border-primary focus:outline-none"
+          className="w-full mb-2 p-2 rounded border border-gray-200 focus:border-primary focus:outline-none"
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
 
-        {/* Botón de recuperar contraseña */}
-        <div className="text-right mb-4">
-        <button
-          type="button"
-          className="text-sm text-primary hover:underline"
-          onClick={async () => {
-            if (!email) {
-              setError("Ingresa tu correo arriba para recuperar contraseña.");
-              return;
-            }
-            try {
-              await resetPassword(email);
-              setSuccess("Se envió un enlace de recuperación a tu correo.");
-              setError(null);
-            } catch (err) {
-              setError("No se pudo enviar el enlace. Verifica tu correo.");
-            }
-          }}
-        >
-          ¿Olvidaste tu contraseña?
-        </button>
-        </div>
-
         <button
           type="submit"
           disabled={isBlocked}
-          className={`w-full font-semibold py-2 rounded transition ${
+          className={`w-full font-semibold py-2 rounded transition mb-2 ${
             isBlocked
               ? "bg-gray-400 cursor-not-allowed text-white"
               : "bg-primary hover:bg-primary-dark text-white"
           }`}
         >
           Ingresar
+        </button>
+
+        <button
+          type="button"
+          onClick={handlePasswordReset}
+          className="text-sm text-primary hover:underline w-full text-center mt-2"
+        >
+          ¿Olvidaste tu contraseña?
         </button>
       </form>
     </div>
