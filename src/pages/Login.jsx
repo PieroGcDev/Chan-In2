@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn } from "../services/authService";
 import { useUser } from "../contexts/UserContext";
+import { supabase } from "../supabaseClient";
 import "../index.css";
 
 function Login() {
@@ -87,6 +88,24 @@ function Login() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError("Por favor, ingresa tu correo antes de continuar.");
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://chan-in2-pierogcdevs-projects.vercel.app/reset-password",
+    });
+
+    if (error) {
+      console.error("Error al enviar enlace de recuperación:", error.message);
+      setError("No se pudo enviar el enlace. Verifica tu correo.");
+    } else {
+      alert("Correo de recuperación enviado. Revisa tu bandeja de entrada.");
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center login-bg">
       <form
@@ -113,7 +132,7 @@ function Login() {
         </label>
         <input
           type="password"
-          className="w-full mb-6 p-2 rounded border border-gray-200 focus:border-primary focus:outline-none"
+          className="w-full mb-2 p-2 rounded border border-gray-200 focus:border-primary focus:outline-none"
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -133,9 +152,13 @@ function Login() {
         </button>
 
         <div className="text-center mt-4">
-          <a href="/reset-password" className="text-sm text-primary hover:underline">
+          <button
+            type="button"
+            onClick={handleResetPassword}
+            className="text-sm text-primary hover:underline"
+          >
             ¿Olvidaste tu contraseña?
-          </a>
+          </button>
         </div>
       </form>
     </div>
