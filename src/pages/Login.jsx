@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { signIn, resetPassword } from "../services/authService";
 import { useUser } from "../contexts/UserContext";
 import "../index.css";
@@ -12,10 +12,15 @@ function Login() {
   const [attempts, setAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const navigate = useNavigate();
-  const { login } = useUser();
+  const { user, login } = useUser();
 
   const MAX_ATTEMPTS = 5;
   const BLOCK_DURATION_MINUTES = 5;
+
+  // 👉 Redirigir si ya está autenticado
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   useEffect(() => {
     const checkBlockStatus = () => {
