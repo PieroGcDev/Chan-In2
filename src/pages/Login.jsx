@@ -2,25 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signIn } from "../services/authService";
 import { useUser } from "../contexts/UserContext";
-import { supabase } from "../supabaseClient";
+import { Eye, EyeOff } from "lucide-react";
 import "../index.css";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [attempts, setAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
-  const navigate = useNavigate();
   const { login, user } = useUser();
+  const navigate = useNavigate();
 
   const MAX_ATTEMPTS = 5;
   const BLOCK_DURATION_MINUTES = 5;
 
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard", { replace: true });
-    }
+    if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
 
   useEffect(() => {
@@ -59,11 +58,7 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (isBlocked) {
-      setError("Aún estás bloqueado. Intenta más tarde.");
-      return;
-    }
+    if (isBlocked) return setError("Aún estás bloqueado. Intenta más tarde.");
 
     try {
       const userData = await signIn(email, password);
@@ -72,8 +67,6 @@ function Login() {
       localStorage.removeItem("lastAttemptTime");
       navigate("/dashboard");
     } catch (err) {
-      console.error("Error al iniciar sesión:", err.message);
-
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
       localStorage.setItem("loginAttempts", newAttempts);
@@ -85,24 +78,6 @@ function Login() {
       } else {
         setError("Credenciales inválidas");
       }
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!email) {
-      setError("Por favor, ingresa tu correo antes de continuar.");
-      return;
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://chan-in2-pierogcdevs-projects.vercel.app/reset-password",
-    });
-
-    if (error) {
-      console.error("Error al enviar enlace de recuperación:", error.message);
-      setError("No se pudo enviar el enlace. Verifica tu correo.");
-    } else {
-      alert("Correo de recuperación enviado. Revisa tu bandeja de entrada.");
     }
   };
 
@@ -127,17 +102,24 @@ function Login() {
           required
         />
 
-        <label className="block mb-1 font-medium text-secondary">
-          Contraseña
-        </label>
-        <input
-          type="password"
-          className="w-full mb-2 p-2 rounded border border-gray-200 focus:border-primary focus:outline-none"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <label className="block mb-1 font-medium text-secondary">Contraseña</label>
+        <div className="relative mb-6">
+          <input
+            type={showPassword ? "text" : "password"}
+            className="w-full p-2 rounded border border-gray-200 focus:border-primary focus:outline-none pr-10"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-600"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
 
         <button
           type="submit"
@@ -152,13 +134,9 @@ function Login() {
         </button>
 
         <div className="text-center mt-4">
-          <button
-            type="button"
-            onClick={handleResetPassword}
-            className="text-sm text-primary hover:underline"
-          >
+          <a href="/reset-password" className="text-sm text-primary hover:underline">
             ¿Olvidaste tu contraseña?
-          </button>
+          </a>
         </div>
       </form>
     </div>
