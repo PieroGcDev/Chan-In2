@@ -1,12 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -24,7 +22,7 @@ export const UserProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    navigate('/login');
+    // Redirección debe hacerse desde el componente que llama logout
   };
 
   return (
