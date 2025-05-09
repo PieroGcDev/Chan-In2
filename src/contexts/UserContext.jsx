@@ -6,23 +6,23 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+// UserContext.jsx (actualizado para usar sessionStorage)
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const userData = sessionStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+    setUser(JSON.parse(userData));
     }
     setLoading(false);
   }, []);
 
   const login = (userData) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    sessionStorage.setItem('user', JSON.stringify(userData)); // ← cambia a sessionStorage
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    // Redirección debe hacerse desde el componente que llama logout
+    sessionStorage.removeItem('user');
   };
 
   return (
