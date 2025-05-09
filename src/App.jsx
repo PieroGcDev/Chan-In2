@@ -8,21 +8,23 @@ import UsersPage from "./pages/UsersPage";
 import ReportsPage from "./pages/ReportsPage";
 import ProductForm from "./components/ProductForm";
 import Navbar from "./components/Navbar";
-import { useUser } from "./contexts/UserContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useUser } from "./contexts/UserContext";
 
 function App() {
   const { user } = useUser();
-  const role = user?.role || user?.fk_roles?.name || "guest";
-
-  if (user === undefined) return <div>Loading...</div>;
+  const isAuthenticated = !!user;
 
   return (
     <BrowserRouter>
-      {user && <Navbar role={role} />}
+      {/* Solo muestra la navbar si está autenticado */}
+      {isAuthenticated && <Navbar role={user.role} />}
+
       <Routes>
+        {/* Página pública */}
         <Route path="/login" element={<Login />} />
 
+        {/* Página privada general */}
         <Route
           path="/dashboard"
           element={
@@ -32,15 +34,15 @@ function App() {
           }
         />
 
+        {/* Admin */}
         <Route
           path="/products"
           element={
-            <ProtectedRoute role={["admin", "colaborator"]}>
+            <ProtectedRoute role="admin">
               <ProductsPage />
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/products/new"
           element={
@@ -49,7 +51,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/products/edit/:id"
           element={
@@ -58,7 +59,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/machines"
           element={
@@ -67,7 +67,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/users"
           element={
@@ -77,18 +76,20 @@ function App() {
           }
         />
 
+        {/* Admin y colaborador */}
         <Route
           path="/reports"
           element={
-            <ProtectedRoute role={["admin", "colaborator"]}>
+            <ProtectedRoute role="colaborator">
               <ReportsPage />
             </ProtectedRoute>
           }
         />
 
+        {/* Catch-all */}
         <Route
           path="*"
-          element={<Navigate to={user ? "/dashboard" : "/login"} replace />}
+          element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />}
         />
       </Routes>
     </BrowserRouter>
