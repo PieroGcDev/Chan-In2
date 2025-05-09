@@ -9,43 +9,74 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [attempts, setAttempts] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
   const navigate = useNavigate();
   const { login } = useUser();
 
   const MAX_ATTEMPTS = 5;
+  const BLOCK_DURATION_MINUTES = 5;
 
-  // Cargar intentos desde localStorage
   useEffect(() => {
-    const savedAttempts = localStorage.getItem("loginAttempts");
-    if (savedAttempts) {
-      setAttempts(parseInt(savedAttempts));
-    }
+    const checkBlockStatus = () => {
+      const savedAttempts = parseInt(localStorage.getItem("loginAttempts")) || 0;
+      const lastAttemptTime = localStorage.getItem("lastAttemptTime");
+  
+      if (savedAttempts >= MAX_ATTEMPTS && lastAttemptTime) {
+        const now = new Date();
+        const last = new Date(lastAttemptTime);
+        const diffMs = now - last;
+        const minutesPassed = diffMs / (1000 * 60);
+  
+        if (minutesPassed < BLOCK_DURATION_MINUTES) {
+          const remainingMs = BLOCK_DURATION_MINUTES * 60 * 1000 - diffMs;
+          const minutes = Math.floor(remainingMs / 60000);
+          const seconds = Math.floor((remainingMs % 60000) / 1000);
+          setIsBlocked(true);
+          setError(`Demasiados intentos. Intenta en ${minutes}:${seconds.toString().padStart(2, '0')} minutos.`);
+        } else {
+          // Tiempo expirado, desbloquear
+          localStorage.removeItem("loginAttempts");
+          localStorage.removeItem("lastAttemptTime");
+          setAttempts(0);
+          setIsBlocked(false);
+          setError(null);
+        }
+      } else {
+        setAttempts(savedAttempts);
+      }
+    };
+  
+    checkBlockStatus();
+    const interval = setInterval(checkBlockStatus, 1000);
+    return () => clearInterval(interval);
   }, []);
-
-  // Guardar en localStorage cada vez que cambia
-  useEffect(() => {
-    localStorage.setItem("loginAttempts", attempts);
-  }, [attempts]);
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (attempts >= MAX_ATTEMPTS) {
-      setError("Has excedido el límite de intentos. Intenta más tarde.");
+
+    if (isBlocked) {
+      setError("Aún estás bloqueado. Intenta más tarde.");
       return;
     }
 
     try {
       const userData = await signIn(email, password);
       login(userData);
-      console.log("Inicio de sesión exitoso, redirigiendo...");
-      localStorage.removeItem("loginAttempts"); // ← Reinicia si fue exitoso
+      localStorage.removeItem("loginAttempts");
+      localStorage.removeItem("lastAttemptTime");
       navigate("/dashboard");
     } catch (err) {
       console.error("Error al iniciar sesión:", err.message);
+
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
+      localStorage.setItem("loginAttempts", newAttempts);
+      localStorage.setItem("lastAttemptTime", new Date().toISOString());
+
       if (newAttempts >= MAX_ATTEMPTS) {
-        setError("Has excedido el límite de intentos. Intenta más tarde.");
+        setIsBlocked(true);
+        setError("Has excedido el límite de intentos. Intenta nuevamente en 5 minutos.");
       } else {
         setError("Credenciales inválidas");
       }
@@ -87,9 +118,9 @@ function Login() {
 
         <button
           type="submit"
-          disabled={attempts >= MAX_ATTEMPTS}
+          disabled={isBlocked}
           className={`w-full font-semibold py-2 rounded transition ${
-            attempts >= MAX_ATTEMPTS
+            isBlocked
               ? "bg-gray-400 cursor-not-allowed text-white"
               : "bg-primary hover:bg-primary-dark text-white"
           }`}
