@@ -13,9 +13,17 @@ import ResetPassword from "../pages/ResetPassword";
 import { useUser } from "../contexts/UserContext";
 
 export const AppRoutes = () => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const isAuthenticated = !!user;
   const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-xl font-semibold">Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -3,31 +3,32 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Guardará todo: id, email, role
-  const [loading, setLoading] = useState(true); // Estado de carga
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar si hay datos del usuario en localStorage
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData)); // Establecer el usuario desde localStorage
+      setUser(JSON.parse(userData));
     }
-    setLoading(false); // Dejar de cargar una vez que se ha verificado
+    setLoading(false);
   }, []);
 
   const login = (userData) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData)); // Guardar en localStorage
+    localStorage.setItem('user', JSON.stringify(userData));
+    setLoading(false);
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user'); // Eliminar de localStorage
+    localStorage.removeItem('user');
+    setLoading(false);
   };
 
   return (
-    <UserContext.Provider value={{ user, login, logout }}>
-      {!loading && children} {/* No renderizar los hijos hasta que no esté cargado el usuario */}
+    <UserContext.Provider value={{ user, login, logout, loading }}>
+      {!loading && children}
     </UserContext.Provider>
   );
 };
