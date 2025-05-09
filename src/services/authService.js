@@ -80,3 +80,11 @@ export const signIn = async (email, password) => {
     role: profile.fk_roles?.name || "guest"
   };
 };
+
+export const resetPassword = async (email) => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://chan-in2-pierogcdevs-projects.vercel.app/reset-password",
+  });
+  if (error) throw error;
+};
+

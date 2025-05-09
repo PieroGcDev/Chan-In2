@@ -9,6 +9,7 @@ import ReportsPage from "./pages/ReportsPage";
 import ProductForm from "./components/ProductForm";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ResetPassword from "./pages/ResetPassword"; // ← NUEVO
 import { useUser } from "./contexts/UserContext";
 
 function App() {
@@ -21,8 +22,9 @@ function App() {
       {isAuthenticated && <Navbar role={user.role} />}
 
       <Routes>
-        {/* Página pública */}
+        {/* Páginas públicas */}
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} /> {/* ← NUEVO */}
 
         {/* Página privada general */}
         <Route
@@ -34,7 +36,7 @@ function App() {
           }
         />
 
-        {/* Admin */}
+        {/* Rutas de administrador */}
         <Route
           path="/products"
           element={
@@ -76,7 +78,7 @@ function App() {
           }
         />
 
-        {/* Admin y colaborador */}
+        {/* Reportes accesible por admin o colaborador */}
         <Route
           path="/reports"
           element={
