@@ -16,3 +16,9 @@
 .login-bg {
   @apply bg-[url('/pattern-login.png')] bg-center bg-cover;
 }
+
+/* index.css */
+.bg-bg-light {
+  background-color: #f4f5f7; /* Puedes cambiar a la textura o imagen que quieras */
+}
+
