@@ -38,7 +38,8 @@ function Navbar() {
             <Link to="/dashboard" className="hover:underline">Dashboard</Link>
           </li>
 
-          {(role === "admin" || role === "colaborator") && (
+          {/* Permitir productos a admin y colaborador */}
+          {(role === "admin" || role === "colaborador") && (
             <li><Link to="/products" className="hover:underline">Productos</Link></li>
           )}
 
@@ -49,7 +50,8 @@ function Navbar() {
             </>
           )}
 
-          {(role === "admin" || role === "colaborator") && (
+          {/* Reportes disponible para ambos */}
+          {(role === "admin" || role === "colaborador") && (
             <li><Link to="/reports" className="hover:underline">Reportes</Link></li>
           )}
 
@@ -63,7 +65,7 @@ function Navbar() {
         <ul className="md:hidden mt-4 space-y-2 px-4">
           <li><Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link></li>
 
-          {(role === "admin" || role === "colaborator") && (
+          {(role === "admin" || role === "colaborador") && (
             <li><Link to="/products" onClick={() => setMenuOpen(false)}>Productos</Link></li>
           )}
 
@@ -74,7 +76,7 @@ function Navbar() {
             </>
           )}
 
-          {(role === "admin" || role === "colaborator") && (
+          {(role === "admin" || role === "colaborador") && (
             <li><Link to="/reports" onClick={() => setMenuOpen(false)}>Reportes</Link></li>
           )}
 
