@@ -13,19 +13,26 @@ export default function ProductForm() {
   const [product, setProduct] = useState({
     name: '',
     sku: '',
-    stock: 0,
+    stock: '',
     description: '',
     barcode: '',
     price: ''
   });
 
-  const [loading, setLoading] = useState(!!id); // solo carga si es modo edición
+  const [loading, setLoading] = useState(!!id);
 
   useEffect(() => {
     const loadProduct = async () => {
       try {
         const data = await fetchProductById(id);
-        setProduct(data);
+        setProduct({
+          name: data.name || '',
+          sku: data.sku || '',
+          stock: data.stock ?? '',
+          description: data.description || '',
+          barcode: data.barcode || '',
+          price: data.price ?? ''
+        });
       } catch (err) {
         console.error("Error al cargar producto:", err);
       } finally {
@@ -33,104 +40,88 @@ export default function ProductForm() {
       }
     };
 
-    if (id) {
-      loadProduct();
-    }
+    if (id) loadProduct();
   }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProduct((prev) => ({
       ...prev,
-      [name]: name === 'stock' || name === 'price' ? parseFloat(value) : value
+      [name]: name === 'stock' || name === 'price' ? (value === '' ? '' : parseFloat(value)) : value
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (id) {
-        await updateProduct(id, product);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // Validaciones básicas antes de enviar
+  if (!product.name.trim() || !product.sku.trim() || product.stock === '') {
+    alert("Por favor completa los campos obligatorios: Nombre, SKU, Stock.");
+    return;
+  }
+
+  try {
+    // Preparar datos limpios
+    const updatedProduct = {
+      name: product.name.trim(),
+      sku: product.sku.trim(),
+      barcode: product.barcode.trim() || null,
+      stock: parseInt(product.stock) || 0,
+      price: product.price !== '' ? parseFloat(product.price) : null,
+      description: product.description.trim() || null
+    };
+
+    if (id) {
+      const result = await updateProduct(id, updatedProduct);
+      if (result) {
+        console.log("Producto actualizado:", result);
       } else {
-        await addProduct(product);
+        console.error("No se actualizó el producto, respuesta vacía.");
       }
-      navigate('/products');
-    } catch (error) {
-      console.error('Error al guardar el producto:', error);
+    } else {
+      const result = await addProduct(updatedProduct);
+      if (result) {
+        console.log("Producto creado:", result);
+      }
     }
-  };
+
+    navigate("/products", { replace: true });
+  } catch (error) {
+    console.error("Error al guardar el producto:", error.message || error);
+    alert("Error al guardar el producto.");
+  }
+};
+
 
   if (loading) return <p className="p-4">Cargando formulario...</p>;
 
   return (
     <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">
-        {id ? "Editar Producto" : "Nuevo Producto"}
-      </h2>
+      <h2 className="text-2xl font-bold mb-4">{id ? "Editar Producto" : "Nuevo Producto"}</h2>
       <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700">Nombre</label>
-          <input
-            type="text"
-            name="name"
-            value={product.name || ""}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">SKU</label>
-          <input
-            type="text"
-            name="sku"
-            value={product.sku || ""}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Código de Barras</label>
-          <input
-            type="text"
-            name="barcode"
-            value={product.barcode || ""}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Stock</label>
-          <input
-            type="number"
-            name="stock"
-            value={product.stock ?? 0}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Precio</label>
-          <input
-            type="number"
-            name="price"
-            value={product.price ?? ""}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-            step="0.01"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700">Descripción</label>
-          <textarea
-            name="description"
-            value={product.description || ""}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-          />
-        </div>
+        {["name", "sku", "barcode", "stock", "price", "description"].map((field) => (
+          <div key={field} className="mb-4">
+            <label className="block text-gray-700 capitalize">{field === "sku" ? "SKU" : field}</label>
+            {field === "description" ? (
+              <textarea
+                name={field}
+                value={product[field]}
+                onChange={handleChange}
+                className="border rounded p-2 w-full"
+              />
+            ) : (
+              <input
+                type={field === "stock" || field === "price" ? "number" : "text"}
+                name={field}
+                value={product[field]}
+                onChange={handleChange}
+                className="border rounded p-2 w-full"
+                step={field === "price" ? "0.01" : undefined}
+                required={["name", "sku", "stock"].includes(field)}
+              />
+            )}
+          </div>
+        ))}
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
           {id ? "Actualizar" : "Crear"}
         </button>
