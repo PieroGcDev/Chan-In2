@@ -13,10 +13,11 @@ export default function ProductForm() {
   const [product, setProduct] = useState({
     name: '',
     sku: '',
-    stock: '',
+    stock: 0,
     description: '',
     barcode: '',
-    price: ''
+    price: '',
+    image_url: ''
   });
 
   const [loading, setLoading] = useState(!!id);
@@ -25,14 +26,7 @@ export default function ProductForm() {
     const loadProduct = async () => {
       try {
         const data = await fetchProductById(id);
-        setProduct({
-          name: data.name || '',
-          sku: data.sku || '',
-          stock: data.stock ?? '',
-          description: data.description || '',
-          barcode: data.barcode || '',
-          price: data.price ?? ''
-        });
+        setProduct(data);
       } catch (err) {
         console.error("Error al cargar producto:", err);
       } finally {
@@ -40,89 +34,124 @@ export default function ProductForm() {
       }
     };
 
-    if (id) loadProduct();
+    if (id) {
+      loadProduct();
+    }
   }, [id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProduct((prev) => ({
       ...prev,
-      [name]: name === 'stock' || name === 'price' ? (value === '' ? '' : parseFloat(value)) : value
+      [name]: name === 'stock' || name === 'price' ? parseFloat(value) : value
     }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  // Validaciones básicas antes de enviar
-  if (!product.name.trim() || !product.sku.trim() || product.stock === '') {
-    alert("Por favor completa los campos obligatorios: Nombre, SKU, Stock.");
-    return;
-  }
-
-  try {
-    // Preparar datos limpios
-    const updatedProduct = {
-      name: product.name.trim(),
-      sku: product.sku.trim(),
-      barcode: product.barcode.trim() || null,
-      stock: parseInt(product.stock) || 0,
-      price: product.price !== '' ? parseFloat(product.price) : null,
-      description: product.description.trim() || null
-    };
-
-    if (id) {
-      const result = await updateProduct(id, updatedProduct);
-      if (result) {
-        console.log("Producto actualizado:", result);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (id) {
+        await updateProduct(id, product);
       } else {
-        console.error("No se actualizó el producto, respuesta vacía.");
+        await addProduct(product);
       }
-    } else {
-      const result = await addProduct(updatedProduct);
-      if (result) {
-        console.log("Producto creado:", result);
-      }
+      navigate('/products');
+    } catch (error) {
+      console.error('Error al guardar el producto:', error);
     }
-
-    navigate("/products", { replace: true });
-  } catch (error) {
-    console.error("Error al guardar el producto:", error.message || error);
-    alert("Error al guardar el producto.");
-  }
-};
-
+  };
 
   if (loading) return <p className="p-4">Cargando formulario...</p>;
 
   return (
     <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">{id ? "Editar Producto" : "Nuevo Producto"}</h2>
-      <form onSubmit={handleSubmit}>
-        {["name", "sku", "barcode", "stock", "price", "description"].map((field) => (
-          <div key={field} className="mb-4">
-            <label className="block text-gray-700 capitalize">{field === "sku" ? "SKU" : field}</label>
-            {field === "description" ? (
-              <textarea
-                name={field}
-                value={product[field]}
-                onChange={handleChange}
-                className="border rounded p-2 w-full"
-              />
-            ) : (
-              <input
-                type={field === "stock" || field === "price" ? "number" : "text"}
-                name={field}
-                value={product[field]}
-                onChange={handleChange}
-                className="border rounded p-2 w-full"
-                step={field === "price" ? "0.01" : undefined}
-                required={["name", "sku", "stock"].includes(field)}
-              />
-            )}
-          </div>
-        ))}
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+      <h2 className="text-2xl font-bold mb-4">
+        {id ? "Editar Producto" : "Nuevo Producto"}
+      </h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-gray-700">Nombre</label>
+          <input
+            type="text"
+            name="name"
+            value={product.name || ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700">SKU</label>
+          <input
+            type="text"
+            name="sku"
+            value={product.sku || ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700">Código de Barras</label>
+          <input
+            type="text"
+            name="barcode"
+            value={product.barcode || ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700">Stock</label>
+          <input
+            type="number"
+            name="stock"
+            value={product.stock ?? 0}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700">Precio</label>
+          <input
+            type="number"
+            name="price"
+            value={product.price ?? ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700">Descripción</label>
+          <textarea
+            name="description"
+            value={product.description || ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+          />
+        </div>
+        <div>
+          <label className="block text-gray-700">URL de la Imagen</label>
+          <input
+            type="text"
+            name="image_url"
+            value={product.image_url || ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+            placeholder="https://tuservidor.com/imagen.jpg"
+          />
+          {product.image_url && (
+            <img
+              src={product.image_url}
+              alt="Vista previa"
+              className="w-24 h-24 object-cover rounded mt-2 border"
+            />
+          )}
+        </div>
+
+        <button type="submit" className="bg-primary text-white px-4 py-2 rounded">
           {id ? "Actualizar" : "Crear"}
         </button>
       </form>
