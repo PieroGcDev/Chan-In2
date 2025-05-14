@@ -8,13 +8,17 @@ export default function ScannerPage() {
   const [scannerActive, setScannerActive] = useState(false);
   const scannerInstanceRef = useRef(null);
 
+  // Set para evitar duplicados inmediatos
+  const scannedCodesRef = useRef(new Set());
+
   const handleScanSuccess = async (decodedText) => {
-    // Verificar si ya fue escaneado antes (por código escaneado)
-    if (scannedProducts.some(p => p.scannedCode === decodedText)) {
-      setStatusMessage({ text: "Este producto ya fue escaneado", type: "warning" });
-      setTimeout(() => setStatusMessage(null), 3000);
+    // Verificar si el código ya está en la sesión
+    if (scannedCodesRef.current.has(decodedText)) {
+      // No mostrar mensaje si ya estaba para evitar spam
       return;
     }
+
+    scannedCodesRef.current.add(decodedText);
 
     try {
       const products = await fetchProducts();
@@ -38,6 +42,7 @@ export default function ScannerPage() {
     } catch (error) {
       console.error("Error al buscar producto:", error);
       setStatusMessage({ text: "Error al buscar producto", type: "error" });
+      setTimeout(() => setStatusMessage(null), 3000);
     }
   };
 
@@ -80,6 +85,7 @@ export default function ScannerPage() {
 
   const handleClear = () => {
     setScannedProducts([]);
+    scannedCodesRef.current.clear(); // También limpia el set de códigos
   };
 
   return (
