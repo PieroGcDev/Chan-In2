@@ -38,20 +38,29 @@ function Navbar() {
             <Link to="/dashboard" className="hover:underline">Dashboard</Link>
           </li>
 
+          {/* Permitir escáner solo a colaborador */}
+          {(role === "" || role === "colaborador") && (
+            <li><Link to="/scanner" className="hover:underline">Escáner</Link></li>
+          )}
+
           {/* Permitir productos a admin y colaborador */}
           {(role === "admin" || role === "colaborador") && (
             <li><Link to="/products" className="hover:underline">Productos</Link></li>
           )}
 
+          {/* Permitir máquinas a admin y colaborador */}
+          {(role === "admin" || role === "colaborador") && (
+            <li><Link to="/machines" className="hover:underline">Máquinas</Link></li>
+          )}
+
           {role === "admin" && (
             <>
-              <li><Link to="/machines" className="hover:underline">Máquinas</Link></li>
               <li><Link to="/users" className="hover:underline">Usuarios</Link></li>
             </>
           )}
 
-          {/* Reportes disponible para ambos */}
-          {(role === "admin" || role === "colaborador") && (
+          {/* Reportes disponible admin */}
+          {(role === "admin" || role === "") && (
             <li><Link to="/reports" className="hover:underline">Reportes</Link></li>
           )}
 

@@ -11,6 +11,7 @@ import Navbar from "../components/Navbar";
 import ProtectedRoute from "../components/ProtectedRoute";
 import ResetPassword from "../pages/ResetPassword";
 import { useUser } from "../contexts/UserContext";
+import ScannerPage from "../pages/ScannerPage";
 
 export const AppRoutes = () => {
   const { user, loading } = useUser();
@@ -45,6 +46,15 @@ export const AppRoutes = () => {
         />
 
         <Route
+          path="/scanner"
+          element={
+            <ProtectedRoute role="colaborador">
+              <ScannerPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/products"
           element={
             <ProtectedRoute role={["admin","colaborador"]}>
@@ -71,7 +81,7 @@ export const AppRoutes = () => {
         <Route
           path="/machines"
           element={
-            <ProtectedRoute role="admin">
+            <ProtectedRoute role={["admin","colaborador"]}>
               <MachinesPage />
             </ProtectedRoute>
           }
@@ -87,7 +97,7 @@ export const AppRoutes = () => {
         <Route
           path="/reports"
           element={
-            <ProtectedRoute role="colaborator">
+            <ProtectedRoute role="admin">
               <ReportsPage />
             </ProtectedRoute>
           }
