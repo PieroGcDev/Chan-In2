@@ -19,13 +19,13 @@
 
 /* index.css */
 .bg-bg-light {
-  background-color: #f7f5f4; /* Puedes cambiar a la textura o imagen que quieras */
+  background-color: #ffffff; /* Puedes cambiar a la textura o imagen que quieras */
 }
 
-/*Para cuando le pongamos fondito
+/*Para cuando le pongamos fondito*/
 .bg-bg-light {
-  background-image: url('/mi-nueva-imagen.png');
+  background-image: url('/fondochan.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-} */
+} 

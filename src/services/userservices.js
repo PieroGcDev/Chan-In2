@@ -1,35 +1,53 @@
 import { supabase } from "../supabaseClient";
 
-export const fetchUsers = async () => {
-  const { data, error } = await supabase.from("profiles").select(`
-      id,
-      nombre,
-      apellido,
-      telefono,
-      role:role_id ( name )
-    `);
-  if (error) throw error;
-  return data;
-};
-
 export const inviteUser = async ({ email, password }) => {
-  const { user, error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
   });
   if (error) throw error;
-  return user;
+  return data.user;
 };
 
-export const createCollaborator = async ({
-  userId,
-  nombre,
-  apellido,
-  telefono,
-}) => {
+export const createProfileSafe = async ({ id, nombre, apellido, telefono, email, role_id }) => {
+  const { data: existing, error: fetchError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+
+  if (existing) {
+    console.log("Perfil existe, actualizando...");
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ nombre, apellido, telefono, email, role_id })
+      .eq('id', id);
+    if (updateError) throw updateError;
+  } else {
+    console.log("Insertando nuevo perfil...");
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert([{ id, nombre, apellido, telefono, email, role_id }]);
+    if (insertError) throw insertError;
+  }
+};
+
+export const fetchUsers = async () => {
   const { data, error } = await supabase
     .from("profiles")
-    .insert([{ id: userId, nombre, apellido, telefono }]);
+    .select(`
+      id,
+      nombre,
+      apellido,
+      email,
+      telefono,
+      role_id (
+        name
+      )
+    `)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 };
