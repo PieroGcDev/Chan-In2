@@ -13,7 +13,14 @@ export default function ScannerPage() {
 
     const newScanner = new Html5QrcodeScanner(
       "qr-reader",
-      { fps: 10, qrbox: { width: 250, height: 250 } },
+      {
+        fps: 10,
+        qrbox: (vw, vh) => {
+            const minEdge = Math.min(vw, vh);
+            const size = minEdge * 0.6; // Ajuste dinámico
+            return { width: size, height: size };
+            },
+        },
       false
     );
 
