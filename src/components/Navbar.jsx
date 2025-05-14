@@ -33,60 +33,52 @@ function Navbar() {
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
+        {/* Menú de escritorio */}
         <ul className="hidden md:flex space-x-4">
-          <li>
-            <Link to="/dashboard" className="hover:underline">Dashboard</Link>
-          </li>
+          <li><Link to="/dashboard" className="hover:underline">Dashboard</Link></li>
 
-          {/* Permitir escáner solo a colaborador */}
-          {(role === "" || role === "colaborador") && (
+          {/* Solo colaborador */}
+          {role === "colaborador" && (
             <li><Link to="/scanner" className="hover:underline">Escáner</Link></li>
           )}
 
-          {/* Permitir productos a admin y colaborador */}
+          {/* Admin y colaborador */}
           {(role === "admin" || role === "colaborador") && (
-            <li><Link to="/products" className="hover:underline">Productos</Link></li>
-          )}
-
-          {/* Permitir máquinas a admin y colaborador */}
-          {(role === "admin" || role === "colaborador") && (
-            <li><Link to="/machines" className="hover:underline">Máquinas</Link></li>
-          )}
-
-          {role === "admin" && (
             <>
-              <li><Link to="/users" className="hover:underline">Usuarios</Link></li>
+              <li><Link to="/products" className="hover:underline">Productos</Link></li>
+              <li><Link to="/machines" className="hover:underline">Máquinas</Link></li>
+              <li><Link to="/reports" className="hover:underline">Reportes</Link></li>
             </>
           )}
 
-          {/* Reportes disponible admin */}
-          {(role === "admin" || role === "") && (
-            <li><Link to="/reports" className="hover:underline">Reportes</Link></li>
+          {/* Solo admin */}
+          {role === "admin" && (
+            <li><Link to="/users" className="hover:underline">Usuarios</Link></li>
           )}
 
-          <li>
-            <button onClick={handleLogout} className="hover:underline">Cerrar sesión</button>
-          </li>
+          <li><button onClick={handleLogout} className="hover:underline">Cerrar sesión</button></li>
         </ul>
       </div>
 
+      {/* Menú hamburguesa */}
       {menuOpen && (
         <ul className="md:hidden mt-4 space-y-2 px-4">
           <li><Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link></li>
 
-          {(role === "admin" || role === "colaborador") && (
-            <li><Link to="/products" onClick={() => setMenuOpen(false)}>Productos</Link></li>
+          {role === "colaborador" && (
+            <li><Link to="/scanner" onClick={() => setMenuOpen(false)}>Escáner</Link></li>
           )}
 
-          {role === "admin" && (
+          {(role === "admin" || role === "colaborador") && (
             <>
+              <li><Link to="/products" onClick={() => setMenuOpen(false)}>Productos</Link></li>
               <li><Link to="/machines" onClick={() => setMenuOpen(false)}>Máquinas</Link></li>
-              <li><Link to="/users" onClick={() => setMenuOpen(false)}>Usuarios</Link></li>
+              <li><Link to="/reports" onClick={() => setMenuOpen(false)}>Reportes</Link></li>
             </>
           )}
 
-          {(role === "admin" || role === "colaborador") && (
-            <li><Link to="/reports" onClick={() => setMenuOpen(false)}>Reportes</Link></li>
+          {role === "admin" && (
+            <li><Link to="/users" onClick={() => setMenuOpen(false)}>Usuarios</Link></li>
           )}
 
           <li><button onClick={handleLogout}>Cerrar sesión</button></li>
