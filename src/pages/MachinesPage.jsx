@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { fetchMachines, createMachine, deleteMachine } from "../services/machineService";
+import { fetchMachines, createMachine, deleteMachine, updateMachine } from "../services/machineService";
 import Modal from "react-modal";
 import { useUser } from "../contexts/UserContext";
 
@@ -59,6 +59,15 @@ export default function MachinesPage() {
     }
   };
 
+  const handleChangeStatus = async (id, newStatus) => {
+    try {
+      await updateMachine(id, { status: newStatus });
+      loadMachines();
+    } catch (error) {
+      console.error("Error al actualizar estado:", error.message);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 bg-white rounded shadow animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -74,25 +83,44 @@ export default function MachinesPage() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full bg-white rounded shadow text-sm">
-          <thead className="bg-primary text-white">
+        <table className="w-full bg-white rounded shadow text-sm border">
+          <thead className="bg-primary text-white text-center">
             <tr>
-              <th className="p-3">Nombre</th>
-              <th className="p-3">Código</th>
-              <th className="p-3">Asignado a</th>
-              <th className="p-3">Estado</th>
-              {role === "admin" && <th className="p-3">Acciones</th>}
+              <th className="p-3 border">Nombre</th>
+              <th className="p-3 border">Código</th>
+              <th className="p-3 border">Asignado a</th>
+              <th className="p-3 border">Estado</th>
+              {role === "admin" && <th className="p-3 border">Acciones</th>}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="text-center">
             {machines.map((m) => (
               <tr key={m.id} className="border-b hover:bg-gray-50">
-                <td className="p-3">{m.name}</td>
-                <td className="p-3">{m.code}</td>
-                <td className="p-3">{m.assigned_to ?? "—"}</td>
-                <td className="p-3">{m.status}</td>
+                <td className="p-3 border">{m.name}</td>
+                <td className="p-3 border">{m.code}</td>
+                <td className="p-3 border">{m.assigned_to ?? "—"}</td>
+                <td className="p-3 border">
+                  {role === "admin" ? (
+                    <select
+                      value={m.status}
+                      onChange={(e) => handleChangeStatus(m.id, e.target.value)}
+                      className={`p-2 rounded text-white font-bold ${
+                        m.status === "Operativa" ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    >
+                      <option value="Operativa" className="text-black">Operativa</option>
+                      <option value="No operativa" className="text-black">No operativa</option>
+                    </select>
+                  ) : (
+                    <span className={`px-2 py-1 rounded text-white font-bold ${
+                      m.status === "Operativa" ? "bg-green-500" : "bg-red-500"
+                    }`}>
+                      {m.status}
+                    </span>
+                  )}
+                </td>
                 {role === "admin" && (
-                  <td className="p-3 space-x-2">
+                  <td className="p-3 border space-x-2">
                     <button
                       className="text-blue-500 hover:underline"
                       onClick={() => navigate(`/machines/edit/${m.id}`)}
@@ -113,6 +141,7 @@ export default function MachinesPage() {
         </table>
       </div>
 
+      {/* Modal de añadir máquina */}
       <Modal
         isOpen={showForm}
         onRequestClose={() => setShowForm(false)}

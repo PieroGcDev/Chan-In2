@@ -22,13 +22,13 @@
   background-color: #ffffff; /* Puedes cambiar a la textura o imagen que quieras */
 }
 
-/*Para cuando le pongamos fondito*/
+/*Para cuando le pongamos fondito
 .bg-bg-light {
   background-image: url('/fondochan.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-} 
+} */
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-5px); }
@@ -37,4 +37,10 @@
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-in-out;
+}
+
+/* Fondo general para toda la app */
+body {
+  background: url('fondochan.png') no-repeat center center fixed;
+  background-size: cover;
 }
