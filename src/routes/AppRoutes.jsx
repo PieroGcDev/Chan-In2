@@ -12,6 +12,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import ResetPassword from "../pages/ResetPassword";
 import { useUser } from "../contexts/UserContext";
 import ScannerPage from "../pages/ScannerPage";
+import MachineForm from "../pages/MachineForm";
 
 export const AppRoutes = () => {
   const { user, loading } = useUser();
@@ -86,6 +87,16 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/machines/edit/:id"
+          element={
+            <ProtectedRoute role="admin">
+              <MachineForm />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/users"
           element={
