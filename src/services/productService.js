@@ -37,3 +37,14 @@ export const deleteProduct = async (id) => {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw error;
 };
+
+// Buscar producto por código de barras
+export const fetchProductByBarcode = async (barcode) => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("barcode", barcode)
+    .single(); // ← solo uno
+  if (error) throw error;
+  return data;
+};
