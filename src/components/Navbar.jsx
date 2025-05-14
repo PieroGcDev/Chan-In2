@@ -73,8 +73,11 @@ function Navbar() {
             <>
               <li><Link to="/products" onClick={() => setMenuOpen(false)}>Productos</Link></li>
               <li><Link to="/machines" onClick={() => setMenuOpen(false)}>Máquinas</Link></li>
-              <li><Link to="/reports" onClick={() => setMenuOpen(false)}>Reportes</Link></li>
             </>
+          )}
+
+          {role === "admin" && (
+            <li><Link to="/reports" onClick={() => setMenuOpen(false)}>Reportes</Link></li>
           )}
 
           {role === "admin" && (
