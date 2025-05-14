@@ -8,7 +8,16 @@ export default function ScannerPage() {
   const [scannerActive, setScannerActive] = useState(false);
   const scannerInstanceRef = useRef(null);
 
+  const recentScansRef = useRef(new Set());
+
   const handleScanSuccess = async (decodedText) => {
+    if (recentScansRef.current.has(decodedText)) return; // Bloquea duplicados inmediatos
+
+    recentScansRef.current.add(decodedText);
+    setTimeout(() => {
+      recentScansRef.current.delete(decodedText);
+    }, 5000); // Bloqueo por 5 segundos
+
     if (scannedProducts.some(p => p.scannedCode === decodedText)) {
       setStatusMessage({ text: "Producto ya escaneado", type: "warning" });
       setTimeout(() => setStatusMessage(null), 3000);
@@ -49,7 +58,7 @@ export default function ScannerPage() {
           { facingMode: "environment" },
           {
             fps: 10,
-            qrbox: { width: 300, height: 300 }, // ✅ Ahora cuadrado grande
+            qrbox: { width: 300, height: 300 },
             aspectRatio: 1.0,
           },
           handleScanSuccess
