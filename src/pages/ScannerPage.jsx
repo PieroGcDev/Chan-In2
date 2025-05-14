@@ -6,10 +6,15 @@ export default function ScannerPage() {
   const [scannedProducts, setScannedProducts] = useState([]);
   const [statusMessage, setStatusMessage] = useState(null);
   const [scannerActive, setScannerActive] = useState(false);
-  const scannerRef = useRef(null);
   const scannerInstanceRef = useRef(null);
 
   const handleScanSuccess = async (decodedText) => {
+    if (scannedProducts.some(p => p.scannedCode === decodedText)) {
+      setStatusMessage({ text: "Producto ya escaneado", type: "warning" });
+      setTimeout(() => setStatusMessage(null), 3000);
+      return;
+    }
+
     try {
       const products = await fetchProducts();
       const foundProduct = products.find(p => p.barcode === decodedText);
@@ -44,7 +49,8 @@ export default function ScannerPage() {
           { facingMode: "environment" },
           {
             fps: 10,
-            qrbox: { width: 250, height: 250 },
+            qrbox: { width: 300, height: 300 }, // ✅ Ahora cuadrado grande
+            aspectRatio: 1.0,
           },
           handleScanSuccess
         )
@@ -68,7 +74,6 @@ export default function ScannerPage() {
 
   useEffect(() => {
     return () => {
-      // Siempre detener al desmontar la página
       stopScanner();
     };
   }, []);
@@ -83,8 +88,10 @@ export default function ScannerPage() {
 
       {statusMessage && (
         <div
-          className={`p-3 mb-4 rounded ${
-            statusMessage.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          className={`p-3 mb-4 rounded animate-fade-in ${
+            statusMessage.type === "success" ? "bg-green-100 text-green-700" :
+            statusMessage.type === "warning" ? "bg-yellow-100 text-yellow-700" :
+            "bg-red-100 text-red-700"
           }`}
         >
           {statusMessage.text}
@@ -107,15 +114,13 @@ export default function ScannerPage() {
         </button>
       )}
 
-      {/* Contenedor del escáner */}
       <div
         id="reader"
-        className="mx-auto mb-6"
+        className="mx-auto mb-6 rounded-lg overflow-hidden shadow"
         style={{
           width: scannerActive ? "100%" : "0",
           maxWidth: "400px",
           height: scannerActive ? "300px" : "0",
-          overflow: "hidden",
         }}
       ></div>
 
@@ -127,7 +132,7 @@ export default function ScannerPage() {
       </div>
 
       {scannedProducts.length > 0 && (
-        <div className="overflow-x-auto bg-white rounded shadow">
+        <div className="overflow-x-auto bg-white rounded shadow animate-fade-in">
           <table className="w-full text-sm text-left">
             <thead className="bg-primary text-white">
               <tr>
@@ -140,7 +145,7 @@ export default function ScannerPage() {
             </thead>
             <tbody>
               {scannedProducts.map((p, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
+                <tr key={index} className="border-b hover:bg-gray-50 animate-fade-in">
                   <td className="p-2">{p.scannedCode}</td>
                   <td className="p-2">{p.name ?? "—"}</td>
                   <td className="p-2">{p.sku ?? "—"}</td>
