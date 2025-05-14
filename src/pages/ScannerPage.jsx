@@ -6,25 +6,25 @@ export default function ScannerPage() {
   const [scannerActive, setScannerActive] = useState(false);
   const [scannedProducts, setScannedProducts] = useState([]);
   const [scanner, setScanner] = useState(null);
-  const scannerRef = useRef(null);
+  const scannedCodesRef = useRef(new Set());
 
-  // Iniciar el escaneo
   const handleStartScanner = () => {
-    if (scanner) return; // Evitar duplicación
+    if (scanner) return;
 
     const newScanner = new Html5QrcodeScanner(
       "qr-reader",
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-      },
-      /* verbose= */ false
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      false
     );
 
     newScanner.render(
       async (decodedText) => {
-        const alreadyScanned = scannedProducts.find(p => p.barcode === decodedText);
-        if (alreadyScanned) return; // Evitar duplicados exactos en la tabla
+        if (scannedCodesRef.current.has(decodedText)) {
+          console.log("Código ya escaneado, ignorando:", decodedText);
+          return;
+        }
+
+        scannedCodesRef.current.add(decodedText);
 
         try {
           const products = await fetchProducts();
@@ -51,16 +51,21 @@ export default function ScannerPage() {
     setScannerActive(true);
   };
 
-  // Detener escaneo
   const handleStopScanner = async () => {
     if (scanner) {
       await scanner.clear();
       setScanner(null);
       setScannerActive(false);
+      // Si deseas limpiar los códigos al detener:
+      // scannedCodesRef.current.clear();
     }
   };
 
-  // Limpiar al desmontar
+  const handleClearResults = () => {
+    setScannedProducts([]);
+    scannedCodesRef.current.clear();
+  };
+
   useEffect(() => {
     return () => {
       if (scanner) scanner.clear();
@@ -68,61 +73,76 @@ export default function ScannerPage() {
   }, [scanner]);
 
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-bg-light">
-      <div className="max-w-3xl mx-auto bg-white p-6 rounded shadow animate-fade-in">
-        <h2 className="text-2xl font-bold text-primary mb-4 text-center">Escaneo de Producto</h2>
+    <div className="min-h-screen p-6 bg-bg-light">
+      <h1 className="text-2xl font-bold text-primary mb-4 text-center">
+        Escaneo de Producto
+      </h1>
 
-        {/* Botones */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6 justify-center">
+      <div className="flex flex-col items-center space-y-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          {!scannerActive && (
+            <button
+              onClick={handleStartScanner}
+              className="bg-primary hover:bg-primary-dark text-white px-6 py-2 rounded shadow"
+            >
+              Iniciar Escaneo
+            </button>
+          )}
+          {scannerActive && (
+            <button
+              onClick={handleStopScanner}
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded shadow"
+            >
+              Detener Escaneo
+            </button>
+          )}
           <button
-            onClick={handleStartScanner}
-            disabled={scannerActive}
-            className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded w-full md:w-auto transition"
+            onClick={handleClearResults}
+            className="bg-gray-300 hover:bg-gray-400 text-black px-6 py-2 rounded shadow"
           >
-            Iniciar Escaneo
-          </button>
-          <button
-            onClick={handleStopScanner}
-            disabled={!scannerActive}
-            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-full md:w-auto transition"
-          >
-            Detener Escaneo
+            Limpiar Resultados
           </button>
         </div>
 
-        {/* Cámara */}
-        <div id="qr-reader" className="w-full mx-auto max-w-md md:max-w-lg bg-gray-100 rounded shadow-md"></div>
+        <div
+          id="qr-reader"
+          className="rounded-lg shadow-lg overflow-hidden bg-black w-full max-w-md aspect-square"
+        ></div>
+      </div>
 
-        {/* Productos escaneados */}
-        {scannedProducts.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold mb-4 text-primary">
-              Productos Escaneados ({scannedProducts.length})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm bg-white border rounded shadow">
-                <thead className="bg-primary text-white">
-                  <tr>
-                    <th className="p-2">Nombre</th>
-                    <th className="p-2">Código de Barras</th>
-                    <th className="p-2">Stock</th>
-                    <th className="p-2">Precio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scannedProducts.map((p, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{p.name}</td>
-                      <td className="p-2">{p.barcode}</td>
-                      <td className="p-2">{p.stock ?? "—"}</td>
-                      <td className="p-2">{p.price ? `$${p.price}` : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+      <div className="bg-white p-4 rounded-lg shadow-lg">
+        <h2 className="text-lg font-semibold mb-2 text-primary">
+          Productos Escaneados: {scannedProducts.length}
+        </h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm rounded-lg overflow-hidden">
+            <thead className="bg-primary text-white">
+              <tr>
+                <th className="p-2">Nombre</th>
+                <th className="p-2">SKU</th>
+                <th className="p-2">Código</th>
+                <th className="p-2">Stock</th>
+                <th className="p-2">Precio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scannedProducts.map((product, index) => (
+                <tr
+                  key={index}
+                  className="border-b hover:bg-gray-50 transition-all"
+                >
+                  <td className="p-2">{product.name}</td>
+                  <td className="p-2">{product.sku ?? "—"}</td>
+                  <td className="p-2">{product.barcode}</td>
+                  <td className="p-2">{product.stock ?? "—"}</td>
+                  <td className="p-2">
+                    {product.price ? `$${product.price}` : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
