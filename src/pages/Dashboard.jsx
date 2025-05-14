@@ -1,75 +1,102 @@
-import React, { useState } from "react";
-import BarcodeScannerComponent from "react-qr-barcode-scanner";
-import { supabase } from "../supabaseClient";
+import React, { useState, useRef, useEffect } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import { fetchProducts } from "../services/productService";
 
 function Dashboard() {
   const [scanning, setScanning] = useState(false);
-  const [barcode, setBarcode] = useState("");
+  const [code, setCode] = useState(null);
   const [product, setProduct] = useState(null);
+  const [error, setError] = useState(null);
+  const scannerRef = useRef(null);
+  const html5QrCodeRef = useRef(null);
 
-  const handleDetected = async (result) => {
-    if (result) {
-      setBarcode(result.text);
-      setScanning(false);
+  const startScanner = () => {
+    if (html5QrCodeRef.current) return; // evitar múltiples instancias
 
-      // Buscar producto por código de barras
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("barcode", result.text)
-        .single();
+    const config = { fps: 10, qrbox: 250, formatsToSupport: ["CODE_128", "EAN_13", "EAN_8", "UPC_A", "UPC_E"] };
+    const html5QrCode = new Html5Qrcode("scanner");
+    html5QrCodeRef.current = html5QrCode;
 
-      if (error) {
-        console.log("Producto no encontrado o error:", error.message);
-        setProduct(null);
-      } else {
-        setProduct(data);
+    html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      async (decodedText) => {
+        setCode(decodedText);
+        html5QrCode.stop().then(() => {
+          html5QrCode.clear();
+          html5QrCodeRef.current = null;
+        });
+
+        // Buscar producto en Supabase por barcode
+        try {
+          const allProducts = await fetchProducts();
+          const found = allProducts.find((p) => p.barcode === decodedText);
+          if (found) {
+            setProduct(found);
+            setError(null);
+          } else {
+            setProduct(null);
+            setError("Producto no encontrado en la base de datos.");
+          }
+        } catch (e) {
+          console.error(e);
+          setError("Error buscando el producto.");
+        }
+      },
+      (errorMessage) => {
+        console.warn("No detectado:", errorMessage);
       }
-    }
+    ).catch((err) => console.error("Error al iniciar el escáner:", err));
+
+    setScanning(true);
   };
 
+  const stopScanner = () => {
+    if (html5QrCodeRef.current) {
+      html5QrCodeRef.current.stop().then(() => {
+        html5QrCodeRef.current.clear();
+        html5QrCodeRef.current = null;
+      });
+    }
+    setScanning(false);
+    setCode(null);
+    setProduct(null);
+    setError(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopScanner();
+    };
+  }, []);
+
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Escaneo de Producto</h1>
+    <div className="p-6 bg-white rounded shadow">
+      <h2 className="text-2xl font-bold mb-4 text-primary">Escaneo de Producto</h2>
       {!scanning ? (
-        <button
-          onClick={() => setScanning(true)}
-          className="bg-orange-600 text-white py-2 px-4 rounded"
-        >
-          Iniciar Escaneo
+        <button onClick={startScanner} className="bg-primary text-white px-4 py-2 rounded">
+          Iniciar escaneo
         </button>
       ) : (
-        <div className="mt-4">
-          <BarcodeScannerComponent
-            width={500}
-            height={300}
-            onUpdate={(err, result) => {
-              if (result) {
-                handleDetected(result);
-              }
-            }}
-          />
-          <button
-            onClick={() => setScanning(false)}
-            className="bg-gray-400 text-white py-2 px-4 rounded mt-2"
-          >
-            Detener Escaneo
-          </button>
-        </div>
+        <button onClick={stopScanner} className="bg-red-600 text-white px-4 py-2 rounded">
+          Detener escaneo
+        </button>
       )}
 
-      {barcode && (
-        <div className="mt-4">
-          <p className="font-semibold">Código detectado: {barcode}</p>
+      <div id="scanner" className="mt-4 w-full max-w-md"></div>
+
+      {code && (
+        <div className="mt-6">
+          <p className="font-semibold text-gray-700">Código escaneado: {code}</p>
           {product ? (
-            <div className="mt-2 border p-2 rounded bg-green-100">
-              <p><strong>Nombre:</strong> {product.name}</p>
-              <p><strong>Stock:</strong> {product.stock}</p>
-              <p><strong>Precio:</strong> {product.price}</p>
+            <div className="mt-4 bg-green-100 p-4 rounded shadow">
+              <h3 className="text-xl font-bold text-green-700">{product.name}</h3>
+              <p>SKU: {product.sku}</p>
+              <p>Stock: {product.stock}</p>
+              <p>Precio: {product.price}</p>
             </div>
           ) : (
-            <p className="text-red-600">Producto no encontrado</p>
+            <p className="text-red-600">{error}</p>
           )}
         </div>
       )}
