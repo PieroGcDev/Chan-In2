@@ -2,45 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* index.css */
+/* Animación fade-in */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fade-in {
   animation: fade-in 0.4s ease-in-out;
 }
 
-/* Patrón de fondo para login: coloca la imagen en /public/pattern-login.png */
+/* Fondo para la página de login */
 .login-bg {
-  @apply bg-[url('/pattern-login.jpg')] bg-center bg-cover;
+  /* Ahora apuntando a tu imagen */
+  @apply bg-[url('/fondoactualizadoChan.png')] bg-center bg-cover;
 }
 
-/* index.css */
-.bg-bg-light {
-  background-color: #ffffff; /* Puedes cambiar a la textura o imagen que quieras */
-}
-
-/*Para cuando le pongamos fondito
-.bg-bg-light {
-  background-image: url('/fondochan.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-} */
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-in-out;
-}
-
-/* Fondo general para toda la app */
+/* Fondo general de toda la app */
 body {
-  background: url('fondoactualizadoChan.jpg') no-repeat center center fixed;
+  background-image: url('/fondoactualizadoChan.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
   background-size: cover;
 }
