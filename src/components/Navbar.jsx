@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { useUser } from "../contexts/UserContext";
 import { Menu, X } from "lucide-react";
 
-function Navbar() {
+export default function Navbar() {
   const { user, logout } = useUser();
-  const [isLoading, setIsLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user !== null) setIsLoading(false);
-  }, [user]);
+    if (user === null) navigate("/login", { replace: true });
+  }, [user, navigate]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (!user) return null;
+  const { role } = user;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -22,76 +22,185 @@ function Navbar() {
     navigate("/login");
   };
 
-  const { role } = user;
-
   return (
-    <nav className="bg-primary text-white p-4">
-      <div className="container mx-auto flex items-center justify-between">
-        <div className="text-xl font-bold">CHAN Tiendas</div>
-
-        <button className="md:hidden" onClick={() => setMenuOpen((prev) => !prev)}>
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+    <nav className="bg-primary text-white shadow-md sticky top-0 z-50 h-16">
+      <div className="container mx-auto flex items-center justify-between h-full px-4">
+        {/* Logo */}
+        <div className="flex-1">
+          <NavLink to="/">
+            {/* altura del logo mayor, pero dentro del navbar de 4rem */}
+            <img
+              src="/chan.png"
+              alt="CHAN Tiendas"
+              className="h-16 object-contain"
+            />
+          </NavLink>
+        </div>
 
         {/* Menú de escritorio */}
-        <ul className="hidden md:flex space-x-4">
-          <li><Link to="/dashboard" className="hover:underline">Dashboard</Link></li>
-
-          {/* Solo colaborador */}
+        <ul className="hidden md:flex flex-1 justify-center space-x-6">
+          <li>
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                isActive ? "underline font-semibold" : "hover:underline"
+              }
+            >
+              Dashboard
+            </NavLink>
+          </li>
           {role === "colaborador" && (
-            <li><Link to="/scanner" className="hover:underline">Escáner</Link></li>
+            <li>
+              <NavLink
+                to="/scanner"
+                className={({ isActive }) =>
+                  isActive ? "underline font-semibold" : "hover:underline"
+                }
+              >
+                Escáner
+              </NavLink>
+            </li>
           )}
-
-          {/* Admin y colaborador */}
           {(role === "admin" || role === "colaborador") && (
             <>
-              <li><Link to="/products" className="hover:underline">Productos</Link></li>
-              <li><Link to="/machines" className="hover:underline">Máquinas</Link></li>
-              <li><Link to="/reports" className="hover:underline">Reportes</Link></li>
+              <li>
+                <NavLink
+                  to="/products"
+                  className={({ isActive }) =>
+                    isActive ? "underline font-semibold" : "hover:underline"
+                  }
+                >
+                  Productos
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/machines"
+                  className={({ isActive }) =>
+                    isActive ? "underline font-semibold" : "hover:underline"
+                  }
+                >
+                  Máquinas
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/reports"
+                  className={({ isActive }) =>
+                    isActive ? "underline font-semibold" : "hover:underline"
+                  }
+                >
+                  Reportes
+                </NavLink>
+              </li>
             </>
           )}
-
-          {/* Solo admin */}
           {role === "admin" && (
-            <li><Link to="/users" className="hover:underline">Usuarios</Link></li>
+            <li>
+              <NavLink
+                to="/users"
+                className={({ isActive }) =>
+                  isActive ? "underline font-semibold" : "hover:underline"
+                }
+              >
+                Usuarios
+              </NavLink>
+            </li>
           )}
-
-          <li><button onClick={handleLogout} className="hover:underline">Cerrar sesión</button></li>
         </ul>
+
+        {/* Botón logout y hamburguesa móvil */}
+        <div className="flex-1 flex justify-end items-center">
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+          >
+            Cerrar sesión
+          </button>
+          <button
+            className="md:hidden ml-4"
+            onClick={() => setMenuOpen((prev) => !prev)}
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
-      {/* Menú hamburguesa */}
+      {/* Menú móvil */}
       {menuOpen && (
-        <ul className="md:hidden mt-4 space-y-2 px-4">
-          <li><Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link></li>
-
+        <ul className="md:hidden bg-primary px-4 pb-4 space-y-2">
+          <li>
+            <NavLink
+              to="/dashboard"
+              onClick={() => setMenuOpen(false)}
+              className="block hover:underline"
+            >
+              Dashboard
+            </NavLink>
+          </li>
           {role === "colaborador" && (
-            <li><Link to="/scanner" onClick={() => setMenuOpen(false)}>Escáner</Link></li>
+            <li>
+              <NavLink
+                to="/scanner"
+                onClick={() => setMenuOpen(false)}
+                className="block hover:underline"
+              >
+                Escáner
+              </NavLink>
+            </li>
           )}
-
           {(role === "admin" || role === "colaborador") && (
             <>
-              <li><Link to="/products" onClick={() => setMenuOpen(false)}>Productos</Link></li>
+              <li>
+                <NavLink
+                  to="/products"
+                  onClick={() => setMenuOpen(false)}
+                  className="block hover:underline"
+                >
+                  Productos
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/machines"
+                  onClick={() => setMenuOpen(false)}
+                  className="block hover:underline"
+                >
+                  Máquinas
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/reports"
+                  onClick={() => setMenuOpen(false)}
+                  className="block hover:underline"
+                >
+                  Reportes
+                </NavLink>
+              </li>
             </>
           )}
-
           {role === "admin" && (
-            <li><Link to="/machines" onClick={() => setMenuOpen(false)}>Máquinas</Link></li>
+            <li>
+              <NavLink
+                to="/users"
+                onClick={() => setMenuOpen(false)}
+                className="block hover:underline"
+              >
+                Usuarios
+              </NavLink>
+            </li>
           )}
-
-          {role === "admin" && (
-            <li><Link to="/reports" onClick={() => setMenuOpen(false)}>Reportes</Link></li>
-          )}
-
-          {role === "admin" && (
-            <li><Link to="/users" onClick={() => setMenuOpen(false)}>Usuarios</Link></li>
-          )}
-
-          <li><button onClick={handleLogout}>Cerrar sesión</button></li>
+          <li>
+            <button
+              onClick={handleLogout}
+              className="w-full text-left hover:underline"
+            >
+              Cerrar sesión
+            </button>
+          </li>
         </ul>
       )}
     </nav>
-  );
+);
 }
-
-export default Navbar;

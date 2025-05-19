@@ -11,17 +11,27 @@
   animation: fade-in 0.4s ease-in-out;
 }
 
-/* Fondo para la página de login */
+/* Wrapper de login con tu pattern intacto */
 .login-bg {
-  /* Ahora apuntando a tu imagen */
-  @apply bg-[url('/fondoactualizadoChan.png')] bg-center bg-cover;
+  @apply relative bg-[url('/fondo.png')] bg-center bg-cover
+          min-h-screen flex items-center justify-center;
+  z-index: 0;
 }
 
-/* Fondo general de toda la app */
-body {
-  background-image: url('/fondoactualizadoChan.png');
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-attachment: fixed;
-  background-size: cover;
+/* Overlay + blur SOLO sobre el fondo */
+.login-bg::after {
+  content: "";
+  @apply absolute inset-0;
+  /* semitransparente y borroso */
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(5px);
+  z-index: 1;
+}
+
+/* Formulario “glass-card” por encima del overlay */
+.glass-card {
+  @apply relative bg-white/50 rounded-lg shadow-lg p-8 max-w-md w-full;
+  /* blur interno un poco más intenso */
+  backdrop-filter: blur(8px);
+  z-index: 10;
 }
