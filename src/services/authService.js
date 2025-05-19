@@ -2,55 +2,78 @@ import { supabase } from "../supabaseClient";
 import validator from "validator";
 
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MINUTES = 15;
+const LOCKOUT_DURATION_MINUTES = 5;
 
-const sanitizeInput = (input) => validator.escape(input);
+const sanitizeInput = (input) => validator.escape(input.trim());
 
+/**
+ * Intenta iniciar sesión aplicando bloqueo por email si supera MAX_ATTEMPTS.
+ */
 export const signIn = async (email, password) => {
-  email = sanitizeInput(email);
+  // 1) Sanitizar
+  email = sanitizeInput(email).toLowerCase();
   password = sanitizeInput(password);
-  console.log("Iniciando sesión con email:", email);
 
   const now = new Date();
 
-  // Verificar intentos fallidos
-  const { data: attempts, error: attemptsError } = await supabase
+  // 2) Leer registro de bloqueos para este email
+  const { data: record, error: recordError } = await supabase
     .from("failed_attempts")
-    .select("*")
+    .select("attempts, locked_until")
     .eq("email", email)
-    .order("created_at", { ascending: false })
-    .limit(MAX_ATTEMPTS);
+    .single();
 
-  if (attemptsError) {
-    console.error("Error al obtener intentos fallidos:", attemptsError.message);
-    throw attemptsError;
+  if (recordError && recordError.code !== "PGRST116") {
+    console.error("Error leyendo failed_attempts:", recordError.message);
+    throw new Error("Error interno, por favor intenta más tarde.");
   }
 
-  const recentAttempts = attempts.filter(
-    (a) =>
-      (now - new Date(a.created_at)) / (1000 * 60) <= LOCKOUT_DURATION_MINUTES
-  );
+  const attempts = record?.attempts || 0;
+  const lockedUntil = record?.locked_until ? new Date(record.locked_until) : null;
 
-  if (recentAttempts.length >= MAX_ATTEMPTS) {
-    throw new Error("Demasiados intentos fallidos. Intenta nuevamente más tarde.");
+  // 3) Verificar bloqueo vigente
+  if (lockedUntil && lockedUntil > now) {
+    const diffMs = lockedUntil - now;
+    const min = Math.floor(diffMs / 60000);
+    const sec = Math.floor((diffMs % 60000) / 1000);
+    throw new Error(`Bloqueado. Intenta en ${min}:${sec.toString().padStart(2,"0")} minutos.`);
   }
 
-  // Intentar iniciar sesión
-  const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
+  // 4) Intentar login
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (signInError) {
-    // Registrar intento fallido
-    await supabase.from("failed_attempts").insert([{ email, created_at: now }]);
+  if (authError || !authData.user) {
+    // registro de intento fallido
+    const newAttempts = attempts + 1;
+    const newLock =
+      newAttempts >= MAX_ATTEMPTS
+        ? new Date(now.getTime() + LOCKOUT_DURATION_MINUTES * 60000).toISOString()
+        : null;
+
+    const { error: upsertError } = await supabase
+      .from("failed_attempts")
+      .upsert(
+        { email, attempts: newAttempts, locked_until: newLock },
+        { onConflict: "email" }
+      );
+
+    if (upsertError) console.error("Error al registrar intento:", upsertError.message);
+
     throw new Error("Credenciales inválidas");
   }
 
-  // Si login fue exitoso, eliminar intentos anteriores
-  await supabase.from("failed_attempts").delete().eq("email", email);
+  // 5) Login exitoso → limpiar registros de bloqueos
+  const { error: deleteError } = await supabase
+    .from("failed_attempts")
+    .delete()
+    .eq("email", email);
 
-  // Obtener perfil del usuario
+  if (deleteError) console.error("Error al borrar bloqueos:", deleteError.message);
+
+  // 6) Obtener perfil
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select(`
@@ -65,26 +88,31 @@ export const signIn = async (email, password) => {
         description
       )
     `)
-    .eq("id", user.id)
+    .eq("id", authData.user.id)
     .single();
 
-  if (profileError) throw profileError;
+  if (profileError) {
+    console.error("Error al cargar perfil:", profileError.message);
+    throw new Error("No se pudo obtener el perfil de usuario.");
+  }
 
-  // Construir objeto userData para login()
+  // 7) Devolver datos de usuario
   return {
-    id: user.id,
-    email: user.email,
+    id: authData.user.id,
+    email: authData.user.email,
     nombre: profile.nombre,
     apellido: profile.apellido,
     telefono: profile.telefono,
-    role: profile.fk_roles?.name || "guest"
+    role: profile.fk_roles?.name || "guest",
   };
 };
 
+/**
+ * Envía correo para restablecer contraseña.
+ */
 export const resetPassword = async (email) => {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: "https://chan-in2-pierogcdevs-projects.vercel.app/reset-password",
   });
   if (error) throw error;
 };
-

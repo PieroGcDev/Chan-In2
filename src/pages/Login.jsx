@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn } from "../services/authService";
+import { signIn } from "../services/authService";  // ahora signIn maneja lock
 import { useUser } from "../contexts/UserContext";
 import { Eye, EyeOff } from "lucide-react";
 import "../index.css";
@@ -10,74 +10,28 @@ function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
-  const [attempts, setAttempts] = useState(0);
-  const [isBlocked, setIsBlocked] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const { login, user } = useUser();
   const navigate = useNavigate();
-
-  const MAX_ATTEMPTS = 5;
-  const BLOCK_DURATION_MINUTES = 5;
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
 
-  useEffect(() => {
-    const checkBlockStatus = () => {
-      const savedAttempts = parseInt(localStorage.getItem("loginAttempts")) || 0;
-      const lastAttemptTime = localStorage.getItem("lastAttemptTime");
-
-      if (savedAttempts >= MAX_ATTEMPTS && lastAttemptTime) {
-        const now = new Date();
-        const last = new Date(lastAttemptTime);
-        const diffMs = now - last;
-        const minutesPassed = diffMs / (1000 * 60);
-
-        if (minutesPassed < BLOCK_DURATION_MINUTES) {
-          const remainingMs = BLOCK_DURATION_MINUTES * 60 * 1000 - diffMs;
-          const minutes = Math.floor(remainingMs / 60000);
-          const seconds = Math.floor((remainingMs % 60000) / 1000);
-          setIsBlocked(true);
-          setError(`Demasiados intentos. Intenta en ${minutes}:${seconds.toString().padStart(2, '0')} minutos.`);
-        } else {
-          localStorage.removeItem("loginAttempts");
-          localStorage.removeItem("lastAttemptTime");
-          setAttempts(0);
-          setIsBlocked(false);
-          setError(null);
-        }
-      } else {
-        setAttempts(savedAttempts);
-      }
-    };
-
-    checkBlockStatus();
-    const interval = setInterval(checkBlockStatus, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isBlocked) return setError("Aún estás bloqueado. Intenta más tarde.");
+    setError(null);
+    setLoading(true);
 
     try {
       const userData = await signIn(email, password);
       login(userData);
-      localStorage.removeItem("loginAttempts");
-      localStorage.removeItem("lastAttemptTime");
       navigate("/dashboard");
     } catch (err) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      localStorage.setItem("loginAttempts", newAttempts);
-      localStorage.setItem("lastAttemptTime", new Date().toISOString());
-
-      if (newAttempts >= MAX_ATTEMPTS) {
-        setIsBlocked(true);
-        setError("Has excedido el límite de intentos. Intenta nuevamente en 5 minutos.");
-      } else {
-        setError("Credenciales inválidas");
-      }
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,6 +44,7 @@ function Login() {
         <h2 className="text-2xl font-bold text-primary text-center mb-6">
           Bienvenido
         </h2>
+
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <label className="block mb-1 font-medium text-secondary">Email</label>
@@ -100,9 +55,12 @@ function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          disabled={loading}
         />
 
-        <label className="block mb-1 font-medium text-secondary">Contraseña</label>
+        <label className="block mb-1 font-medium text-secondary">
+          Contraseña
+        </label>
         <div className="relative mb-6">
           <input
             type={showPassword ? "text" : "password"}
@@ -111,11 +69,13 @@ function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
             className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-600"
+            tabIndex={-1}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -123,18 +83,21 @@ function Login() {
 
         <button
           type="submit"
-          disabled={isBlocked}
+          disabled={loading}
           className={`w-full font-semibold py-2 rounded transition ${
-            isBlocked
+            loading
               ? "bg-gray-400 cursor-not-allowed text-white"
               : "bg-primary hover:bg-primary-dark text-white"
           }`}
         >
-          Ingresar
+          {loading ? "Procesando..." : "Ingresar"}
         </button>
 
         <div className="text-center mt-4">
-          <a href="/reset-password" className="text-sm text-primary hover:underline">
+          <a
+            href="/reset-password"
+            className="text-sm text-primary hover:underline"
+          >
             ¿Olvidaste tu contraseña?
           </a>
         </div>
