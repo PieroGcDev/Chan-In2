@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+// src/pages/UsersPage.jsx
+
+import React, { useEffect, useState, useMemo } from "react";
 import {
   inviteUser,
   createProfileSafe,
@@ -13,6 +15,7 @@ Modal.setAppElement("#root");
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState("");
   const [form, setForm] = useState({
     id: null,
     email: "",
@@ -109,7 +112,6 @@ export default function UsersPage() {
           email: form.email,
         });
       }
-
       await loadUsers();
       setShowForm(false);
     } catch (err) {
@@ -118,60 +120,112 @@ export default function UsersPage() {
     }
   };
 
+  // Filtrar por nombre, apellido o email (convertimos null/undefined a "")
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return users.filter((u) => {
+      const nombre   = (u.nombre   ?? "").toLowerCase();
+      const apellido = (u.apellido ?? "").toLowerCase();
+      const email    = (u.email    ?? "").toLowerCase();
+      return (
+        nombre.includes(q) ||
+        apellido.includes(q) ||
+        email.includes(q)
+      );
+    });
+  }, [users, search]);
+
+{/* mt-6 para espacio entre navbar y contenedores */}
+
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
+    <div className="container mx-auto px-4 space-y-4 mt-6"> 
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold text-orange-600">
           Gestión de Usuarios
         </h2>
-        <button
-          onClick={openNew}
-          className="bg-orange-600 text-white py-2 px-4 rounded hover:bg-orange-700"
-        >
-          Nuevo Usuario
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="🔍 Buscar..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 sm:flex-none w-full sm:w-64 p-2 border rounded focus:ring focus:border-orange-400"
+          />
+          <button
+            onClick={openNew}
+            className="bg-orange-600 text-white py-2 px-4 rounded hover:bg-orange-700 transition"
+          >
+            Nuevo Usuario
+          </button>
+        </div>
       </div>
 
+      {/* Mensaje de error */}
       {error && (
-        <div className="mb-4 text-red-600 bg-red-100 p-2 rounded">
+        <div className="text-red-600 bg-red-100 p-2 rounded">
           {error}
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full bg-white rounded shadow">
-          <thead className="bg-orange-600 text-white">
+      {/* Tabla de usuarios */}
+      <div className="container mx-auto bg-white rounded-lg shadow-lg overflow-x-auto">
+        <table className="w-full table-auto min-w-full">
+          <thead className="bg-orange-500">
             <tr>
-              <th className="p-3">Nombre</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Teléfono</th>
-              <th className="p-3">Rol</th>
-              <th className="p-3">Acciones</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-white-600 uppercase tracking-wider">
+                Nombre
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-white-600 uppercase tracking-wider">
+                Email
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-white-600 uppercase tracking-wider">
+                Teléfono
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-white-600 uppercase tracking-wider">
+                Rol
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-white-600 uppercase tracking-wider">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50">
-                <td className="p-3">
+            {filtered.map((u, idx) => (
+              <tr
+                key={u.id}
+                className={`${
+                  idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                } hover:bg-orange-50 transition`}
+              >
+                <td className="px-4 py-3">
                   {u.nombre} {u.apellido}
                 </td>
-                <td className="p-3">{u.email}</td>
-                <td className="p-3">{u.telefono}</td>
-                <td className="p-3">{u.role?.name}</td>
-                <td className="p-3 space-x-2">
+                <td className="px-4 py-3">{u.email}</td>
+                <td className="px-4 py-3">{u.telefono}</td>
+                <td className="px-4 py-3 capitalize">{u.role?.name}</td>
+                <td className="px-4 py-3 flex space-x-2">
                   <button onClick={() => openEdit(u)}>
-                    <Edit2 size={18} className="text-blue-500" />
+                    <Edit2 size={18} className="text-blue-500 hover:text-blue-600" />
                   </button>
                   <button onClick={() => handleDelete(u.id)}>
-                    <Trash2 size={18} className="text-red-500" />
+                    <Trash2 size={18} className="text-red-500 hover:text-red-600" />
                   </button>
                 </td>
               </tr>
             ))}
+
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
+                  No se encontraron usuarios.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
+      {/* Modal para crear/editar */}
       <Modal
         isOpen={showForm}
         onRequestClose={() => setShowForm(false)}
@@ -183,7 +237,7 @@ export default function UsersPage() {
           onSubmit={handleSubmit}
           className="bg-white p-6 rounded shadow space-y-3"
         >
-          <h3 className="text-xl font-bold mb-2 text-orange-600">
+          <h3 className="text-xl font-bold text-orange-600 mb-2">
             {isEditing ? "Editar Usuario" : "Crear Usuario"}
           </h3>
 
@@ -250,11 +304,11 @@ export default function UsersPage() {
             <option value="2">Colaborador</option>
           </select>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end space-x-2 pt-4">
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="mr-2 bg-gray-300 py-2 px-4 rounded"
+              className="bg-gray-300 py-2 px-4 rounded"
             >
               Cancelar
             </button>

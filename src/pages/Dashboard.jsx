@@ -64,10 +64,10 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <section
-        className="w-full h-96 md:h-[22rem] relative"
+        className="w-full h-96 md:h-[26rem] relative"
         style={{
           backgroundImage: "url('/franja.png')",
-          backgroundSize: "100% auto",       // Ajusta el zoom aquí (ej: 100%, 150%, 200%)
+          backgroundSize: "110% auto",       // Ajusta el zoom aquí (ej: 100%, 150%, 200%)
           backgroundPosition: "center 52%",   // Ajusta el corte vertical aquí (ej: "center 0%", "center 10%")
           backgroundRepeat: "no-repeat",
         }}
