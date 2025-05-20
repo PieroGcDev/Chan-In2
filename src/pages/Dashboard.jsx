@@ -68,7 +68,7 @@ export default function Dashboard() {
           w-full
           h-96
           md:h-[20rem]
-          bg-[url('/franja2.png')]
+          bg-[url('/franja.png')]
           bg-[length:100%_auto]
           bg-contain
           bg-center
