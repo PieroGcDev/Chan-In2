@@ -38,7 +38,7 @@ export default function Navbar() {
         </div>
 
         {/* Menú de escritorio */}
-        <ul className="hidden md:flex flex-1 justify-center space-x-6">
+        <ul className="hidden md:flex flex-1 justify-center space-x-6 text-black">
           <li>
             <NavLink
               to="/dashboard"
@@ -113,7 +113,7 @@ export default function Navbar() {
         <div className="flex-1 flex justify-end items-center">
           <button
             onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded"
+            className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white"
           >
             Cerrar sesión
           </button>
