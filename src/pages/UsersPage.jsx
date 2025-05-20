@@ -36,8 +36,8 @@ export default function UsersPage() {
         nombre: form.nombre,
         apellido: form.apellido,
         telefono: form.telefono,
-        email: form.email,
         role_id: form.role_id,
+        email: form.email,
       });
       await loadUsers();
       setShowForm(false);

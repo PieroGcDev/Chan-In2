@@ -9,28 +9,36 @@ export const inviteUser = async ({ email, password }) => {
   return data.user;
 };
 
-export const createProfileSafe = async ({ id, nombre, apellido, telefono, email, role_id }) => {
+export const createProfileSafe = async ({
+  id,
+  nombre,
+  apellido,
+  telefono,
+  role_id,
+  email,           // <— ahora también recibimos email
+}) => {
   const { data: existing, error: fetchError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', id)
-    .maybeSingle();
+    .from("profiles")
+    .select("id")
+    .eq("id", id)
+    .single();
+  if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
 
-  if (fetchError) throw fetchError;
+  const payload = { id, nombre, apellido, telefono, role_id, email };
 
-  if (existing) {
-    console.log("Perfil existe, actualizando...");
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ nombre, apellido, telefono, email, role_id })
-      .eq('id', id);
-    if (updateError) throw updateError;
-  } else {
-    console.log("Insertando nuevo perfil...");
+  if (!existing) {
+    // Insertar nuevo perfil con email
     const { error: insertError } = await supabase
-      .from('profiles')
-      .insert([{ id, nombre, apellido, telefono, email, role_id }]);
+      .from("profiles")
+      .insert([payload]);
     if (insertError) throw insertError;
+  } else {
+    // Actualizar existente incluyendo email
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update(payload)
+      .eq("id", id);
+    if (updateError) throw updateError;
   }
 };
 
@@ -43,11 +51,9 @@ export const fetchUsers = async () => {
       apellido,
       email,
       telefono,
-      role_id (
-        name
-      )
+      role:role_id ( name )
     `)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data;
+  return data
 };
