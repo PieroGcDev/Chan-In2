@@ -64,25 +64,19 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <section
-        className="
-          w-full
-          h-96
-          md:h-[20rem]
-          bg-[url('/franja.png')]
-          bg-[length:100%_auto]
-          bg-contain
-          bg-center
-          bg-no-repeat
-          relative
-        "
-        style={{ paddingTop: '8%'}}
+        className="w-full h-96 md:h-[22rem] relative"
+        style={{
+          backgroundImage: "url('/franja.png')",
+          backgroundSize: "100% auto",       // Ajusta el zoom aquí (ej: 100%, 150%, 200%)
+          backgroundPosition: "center 52%",   // Ajusta el corte vertical aquí (ej: "center 0%", "center 10%")
+          backgroundRepeat: "no-repeat",
+        }}
       >
         <div className="absolute inset-0 bg-black/30"></div>
         <div className="relative z-10 container mx-auto h-full flex flex-col justify-center items-center text-white px-4">
           <h1 className="text-3xl md:text-4xl font-bold">
             Bienvenido a tu panel: <span className="capitalize">{role}</span>
           </h1>
-          <p className="mt-2 text-lg"></p>
         </div>
       </section>
 
