@@ -28,14 +28,12 @@ export default function Dashboard() {
     (async () => {
       setLoading(true);
       try {
-        // Cargar perfil
         const perfil = await fetchProfile(user.id);
         setProfile(perfil);
 
-        // Cargar productos y máquinas
         const productsData = await fetchProducts();
         const machinesData = await fetchMachines();
-        const oper = machinesData.filter(m => m.status === "Operativa").length;
+        const oper = machinesData.filter((m) => m.status === "Operativa").length;
         const noOp = machinesData.length - oper;
 
         setCounts({
@@ -45,7 +43,6 @@ export default function Dashboard() {
           noOperativas: noOp,
         });
 
-        // Últimos 5 productos
         const latestProds = productsData
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           .slice(0, 5);
@@ -63,39 +60,50 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Hero banner responsivo */}
       <section
-        className="w-full h-96 md:h-[26rem] relative"
-        style={{
-          backgroundImage: "url('/franja.png')",
-          backgroundSize: "110% auto",       // Ajusta el zoom aquí (ej: 100%, 150%, 200%)
-          backgroundPosition: "center 52%",   // Ajusta el corte vertical aquí (ej: "center 0%", "center 10%")
-          backgroundRepeat: "no-repeat",
-        }}
+        className={`
+          w-full
+          h-48        /* móvil: 12rem */
+          sm:h-64     /* tablet: 16rem */
+          md:h-80     /* desktop md: 20rem */
+          lg:h-96     /* desktop lg: 24rem */
+
+          bg-[url('/franja.png')]
+          bg-center
+          bg-no-repeat
+          /* MÓVIL: 150% ancho, auto altura */
+          bg-[length:290%_auto]
+          
+          /* A partir de tablet: 110% ancho y cover */
+          sm:bg-[length:110%_auto] sm:bg-cover
+          sm:bg-[position:50%_52%]
+
+          relative
+        `}
       >
-        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="absolute inset-0 bg-black/30" />
         <div className="relative z-10 container mx-auto h-full flex flex-col justify-center items-center text-white px-4">
-          <h1 className="text-3xl md:text-4xl font-bold">
-            Bienvenido a tu panel: <span className="capitalize">{role}</span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center">
+            Bienvenido a tu panel:{" "}
+            <span className="capitalize">{role}</span>
           </h1>
         </div>
       </section>
 
+      {/* Contenido principal */}
       <main className="container mx-auto mt-6 p-4 space-y-6">
-        {/* Mostrar error si lo hay */}
         {error && (
-          <div className="bg-red-100 text-red-700 p-4 rounded">
-            {error}
-          </div>
+          <div className="bg-red-100 text-red-700 p-4 rounded">{error}</div>
         )}
 
-        {/* Durante carga, sólo este mensaje */}
         {loading ? (
           <div className="text-center py-10">
             <p className="text-gray-600">Cargando datos...</p>
           </div>
         ) : (
           <>
-            {/* Tarjetas de métricas */}
+            {/* Tarjetas métricas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white rounded-lg shadow p-4">
                 <h2 className="text-lg font-medium text-gray-700">Productos</h2>
@@ -116,14 +124,16 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-medium text-gray-700">No operativas</h2>
+                <h2 className="text-lg font-medium text-gray-700">
+                  No operativas
+                </h2>
                 <p className="text-4xl font-bold text-red-500">
                   {counts.noOperativas}
                 </p>
               </div>
             </div>
 
-            {/* Listado de últimos productos */}
+            {/* Últimos productos */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-2xl font-semibold text-gray-800 mb-4">
                 Últimos productos
