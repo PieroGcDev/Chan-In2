@@ -102,6 +102,17 @@ export default function ReportsPage() {
     }
   };
 
+  // Función para exportar sólo el contenedor #report-content
+  const exportPDF = () => {
+    import("html2pdf.js").then((html2pdf) => {
+      const element = document.getElementById("report-content");
+      html2pdf.default()
+        .from(element)
+        .set({ margin: 0.5, filename: `reporte_${selectedMachine}.pdf` })
+        .save();
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto p-6">
@@ -230,12 +241,9 @@ export default function ReportsPage() {
 
         {/* Mostrar resultados */}
         {reportData && (
-          <div className="mt-6 bg-white rounded-lg shadow p-6">
+           <div id="report-content" className="mt-6 bg-white rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Resumen del Reporte</h3>
-            <p><strong>Máquina:</strong> {
-              // Busca el nombre de la máquina seleccionada
-              machines.find(m => m.id === selectedMachine)?.name
-            }</p>
+            <p><strong>Máquina:</strong> {machines.find(m => m.id === selectedMachine)?.name}</p>
             <p><strong>Fecha del reporte:</strong> {reportDate}</p>
             <p><strong>Descripción:</strong> {description}</p>
 
@@ -243,7 +251,14 @@ export default function ReportsPage() {
             <pre className="text-sm bg-gray-100 p-4 rounded overflow-auto whitespace-pre-wrap">
               {reportData}
             </pre>
-          </div>
+
+            <button
+              onClick={exportPDF}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2"
+            >
+              Exportar reporte
+            </button>
+           </div>
         )}
 
       </main>
