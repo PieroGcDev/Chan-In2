@@ -105,3 +105,12 @@ async function _reportByDateRange(groupByField, from, to) {
   if (error) throw error;
   return data;
 }
+
+export async function fetchUsersList() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, nombre, apellido")
+    .order("nombre");
+  if (error) throw error;
+  return data;
+}

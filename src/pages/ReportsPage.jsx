@@ -7,6 +7,7 @@ import {
   fetchReportYears,
   fetchMachinesList,
   fetchMachineReport,
+  fetchUsersList
 } from "../services/reportService";
 
 export default function ReportsPage() {
@@ -21,7 +22,7 @@ export default function ReportsPage() {
   }, [user, navigate]);
 
   // Estados
-  const [reportType, setReportType] = useState("machines");
+  const [reportType, setReportType] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [year, setYear] = useState("");
@@ -34,6 +35,8 @@ export default function ReportsPage() {
 );
   const [loadingYears, setLoadingYears] = useState(false);
   const [loadingMachines, setLoadingMachines] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState("");
@@ -66,6 +69,15 @@ export default function ReportsPage() {
         .finally(() => setLoadingMachines(false));
     }
   }, [reportType]);
+
+  useEffect(() => {
+  if (reportType === "employees") {
+    fetchUsersList()           // Necesitas exportar esta función en reportService
+      .then(list => setUsers(list))
+      .catch(() => setError("No se pudieron cargar los empleados."));
+  }
+}, [reportType]);
+
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -126,9 +138,12 @@ export default function ReportsPage() {
             <label className="block mb-1 font-medium text-gray-700">Tipo de reporte</label>
             <select
               value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
+              onChange={e => setReportType(e.target.value)}
               className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
             >
+              <option value="" disabled>
+                Seleccione un Tipo de Reporte
+              </option>
               <option value="employees">Empleados</option>
               <option value="machines">Máquinas</option>
               <option value="annualValue">Valor monetario anual</option>
@@ -203,24 +218,57 @@ export default function ReportsPage() {
               </select>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {/* Selección de empleado */}
               <div>
-                <label className="block mb-1 font-medium text-gray-700">Fecha desde</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                <label className="block mb-1 font-medium text-gray-700">Empleado</label>
+                <select
+                  value={selectedUser}
+                  onChange={e => setSelectedUser(e.target.value)}
                   className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
                   required
-                />
+                >
+                  <option value="" disabled>Selecciona un empleado</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.nombre} {u.apellido}</option>
+                  ))}
+                </select>
               </div>
+ 
+              {/* Fecha desde / Fecha hasta */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 font-medium text-gray-700">Fecha desde</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={e => setDateFrom(e.target.value)}
+                    className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium text-gray-700">Fecha hasta</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={e => setDateTo(e.target.value)}
+                    className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                    required
+                  />
+                </div>
+              </div>
+ 
+              {/* Descripción del problema */}
               <div>
-                <label className="block mb-1 font-medium text-gray-700">Fecha hasta</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                <label className="block mb-1 font-medium text-gray-700">
+                  Descripción del problema
+                </label>
+                <textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring h-24"
+                  placeholder="Describe aquí el problema"
                   required
                 />
               </div>
