@@ -2,44 +2,100 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
-// Aquí crearás este servicio para llamar a tu backend/Supabase
-import { generateReport } from "../services/reportService";
+import {
+  generateReport,
+  fetchReportYears,
+  fetchMachinesList,
+  fetchMachineReport,
+} from "../services/reportService";
 
 export default function ReportsPage() {
   const { user } = useUser();
   const navigate = useNavigate();
 
-  // Si no es admin, le redirigimos
+  // Redirección según rol
   useEffect(() => {
-    if (!user) {
-      navigate("/login", { replace: true });
-    } else if (user.role !== "admin") {
+    if (!user) navigate("/login", { replace: true });
+    else if (user.role !== "admin")
       navigate("/dashboard", { replace: true });
-    }
   }, [user, navigate]);
 
-  // Estado del formulario
+  // Estados
   const [reportType, setReportType] = useState("machines");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [year, setYear] = useState("");
+  const [years, setYears] = useState([]);
+  const [machines, setMachines] = useState([]);
+  const [selectedMachine, setSelectedMachine] = useState("");
+  const [description, setDescription] = useState("");
+  const [reportDate, setReportDate] = useState(() =>
+  new Date().toISOString().slice(0, 10)
+);
+  const [loadingYears, setLoadingYears] = useState(false);
+  const [loadingMachines, setLoadingMachines] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState("");
 
+  // Carga años para annualValue
+  useEffect(() => {
+    if (reportType === "annualValue") {
+      setLoadingYears(true);
+      setYears([]);
+      setYear("");
+      fetchReportYears()
+        .then((list) => {
+          setYears(list);
+          if (list.length) setYear(list[0].toString());
+        })
+        .catch(() => setError("No se pudieron cargar los años."))
+        .finally(() => setLoadingYears(false));
+    }
+  }, [reportType]);
+
+  // Carga máquinas para machines
+  useEffect(() => {
+    if (reportType === "machines") {
+      setLoadingMachines(true);
+      setMachines([]);
+      setSelectedMachine("");
+      fetchMachinesList()
+        .then((data) => setMachines(data))
+        .catch(() => setError("No se pudieron cargar las máquinas."))
+        .finally(() => setLoadingMachines(false));
+    }
+  }, [reportType]);
+
   const handleGenerate = async (e) => {
     e.preventDefault();
     setError("");
-    if (!dateFrom || !dateTo) {
+    setReportData(null);
+
+    // Validaciones
+    if (reportType === "machines" && !selectedMachine) {
+      setError("Por favor selecciona una máquina.");
+      return;
+    }
+    if (reportType === "annualValue" && !year) {
+      setError("Por favor elige un año.");
+      return;
+    }
+    if (reportType === "employees" && (!dateFrom || !dateTo)) {
       setError("Por favor define ambas fechas.");
       return;
     }
+
     setLoading(true);
     try {
-      // Llama a tu servicio (debes implementarlo)
-      const data = await generateReport({ reportType, dateFrom, dateTo });
+      let data;
+      if (reportType === "machines") {
+        data = await fetchMachineReport(selectedMachine);
+      } else {
+        data = await generateReport({ reportType, dateFrom, dateTo, year });
+      }
       setReportData(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Error generando el reporte.");
     } finally {
       setLoading(false);
@@ -48,25 +104,15 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* El Navbar ya lo monta AppRoutes */}
       <main className="container mx-auto p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Generar Reporte
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Generar Reporte</h2>
 
-        {/* Formulario */}
-        <form
-          onSubmit={handleGenerate}
-          className="bg-white rounded-lg shadow p-6 space-y-4"
-        >
-          {error && (
-            <div className="text-red-600 bg-red-100 p-2 rounded">{error}</div>
-          )}
+        <form onSubmit={handleGenerate} className="bg-white rounded-lg shadow p-6 space-y-4">
+          {error && <div className="text-red-600 bg-red-100 p-2 rounded">{error}</div>}
 
+          {/* Tipo de reporte */}
           <div>
-            <label className="block mb-1 font-medium text-gray-700">
-              Tipo de reporte
-            </label>
+            <label className="block mb-1 font-medium text-gray-700">Tipo de reporte</label>
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
@@ -78,33 +124,99 @@ export default function ReportsPage() {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Fecha desde
-              </label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
-                required
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Fecha hasta
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
-                required
-              />
-            </div>
-          </div>
+          {/* Controles por tipo */}
+          {reportType === "machines" ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-1 font-medium text-gray-700">Máquina</label>
+                <select
+                  value={selectedMachine}
+                  onChange={(e) => setSelectedMachine(e.target.value)}
+                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                  disabled={loadingMachines}
+                  required
+                >
+                  <option value="" disabled>
+                    {loadingMachines ? "Cargando máquinas..." : "Selecciona una máquina"}
+                  </option>
+                  {machines.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
+              {/* Fecha del reporte */}
+              <div>
+                <label className="block mb-1 font-medium text-gray-700">
+                  Fecha del reporte
+                </label>
+                <input
+                  type="date"
+                  value={reportDate}
+                  onChange={e => setReportDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 font-medium text-gray-700">Descripción del problema</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring h-24"
+                  placeholder="Describe aquí el problema"
+                />
+              </div>
+            </div>
+          ) : reportType === "annualValue" ? (
+            <div>
+              <label className="block mb-1 font-medium text-gray-700">Año</label>
+              <select
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                disabled={loadingYears}
+                required
+              >
+                <option value="" disabled>
+                  {loadingYears ? "Cargando años..." : years.length ? "Selecciona un año" : "No hay años"}
+                </option>
+                {years.map((y) => (
+                  <option key={y} value={y.toString()}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-1 font-medium text-gray-700">Fecha desde</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium text-gray-700">Fecha hasta</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Botón Generar */}
           <button
             type="submit"
             disabled={loading}
@@ -119,13 +231,21 @@ export default function ReportsPage() {
         {/* Mostrar resultados */}
         {reportData && (
           <div className="mt-6 bg-white rounded-lg shadow p-6">
-            <h3 className="text-xl font-semibold mb-4">Resultados</h3>
-            {/* Aquí puedes renderizar un gráfico, tabla o estadísticas */}
-            <pre className="text-sm bg-gray-100 p-4 rounded overflow-auto">
-              {JSON.stringify(reportData, null, 2)}
+            <h3 className="text-xl font-semibold mb-4">Resumen del Reporte</h3>
+            <p><strong>Máquina:</strong> {
+              // Busca el nombre de la máquina seleccionada
+              machines.find(m => m.id === selectedMachine)?.name
+            }</p>
+            <p><strong>Fecha del reporte:</strong> {reportDate}</p>
+            <p><strong>Descripción:</strong> {description}</p>
+
+            <h4 className="mt-4 font-medium">Movimientos:</h4>
+            <pre className="text-sm bg-gray-100 p-4 rounded overflow-auto whitespace-pre-wrap">
+              {reportData}
             </pre>
           </div>
         )}
+
       </main>
     </div>
   );

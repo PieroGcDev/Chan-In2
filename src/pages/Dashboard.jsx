@@ -76,7 +76,7 @@ export default function Dashboard() {
           bg-[length:290%_auto]
           
           /* A partir de tablet: 110% ancho y cover */
-          sm:bg-[length:110%_auto] sm:bg-cover
+          sm:bg-[length:140%_auto] sm:bg-cover
           sm:bg-[position:50%_52%]
 
           relative
