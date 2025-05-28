@@ -93,6 +93,16 @@ export default function ReportsPage() {
   }
 }, [reportType]);
 
+// justo después de tus useState y antes de handleGenerate
+useEffect(() => {
+  if (user?.role === "colaborador") {
+    setLoadingMachines(true);
+    fetchMachinesList()
+      .then(list => setMachines(list))
+      .catch(() => setError("No se pudieron cargar las máquinas."))
+      .finally(() => setLoadingMachines(false));
+  }
+}, [user, fetchMachinesList]);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
