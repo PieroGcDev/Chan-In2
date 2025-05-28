@@ -95,15 +95,26 @@ export async function fetchMachineReport(machineId) {
  * Función interna para agrupar conteos entre dos fechas.
  */
 async function _reportByDateRange(groupByField, from, to) {
+  // 1) Traemos los registros sin agrupación
   const { data, error } = await supabase
     .from("inventory_movements")
-    .select(`${groupByField}, count(*)`)
+    .select(`${groupByField}, quantity`)
     .gte("created_at", from)
-    .lte("created_at", to)
-    .group(groupByField);
+    .lte("created_at", to);
 
   if (error) throw error;
-  return data;
+
+  // 2) Agrupamos en JS
+  const agg = data.reduce((acc, row) => {
+    const key = row[groupByField];
+    if (!acc[key]) acc[key] = { [groupByField]: key, count: 0, totalQuantity: 0 };
+    acc[key].count += 1;                 // número de movimientos
+    acc[key].totalQuantity += row.quantity; // suma de cantidad
+    return acc;
+  }, {});
+
+  // 3) Convertimos el objeto en un array
+  return Object.values(agg);
 }
 
 export async function fetchUsersList() {

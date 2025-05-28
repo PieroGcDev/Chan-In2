@@ -17,9 +17,12 @@ export default function ReportsPage() {
   // Redirección según rol
   useEffect(() => {
     if (!user) navigate("/login", { replace: true });
-    else if (user.role !== "admin")
+    else if (user.role !== "admin" && user.role !== "colaborador")
       navigate("/dashboard", { replace: true });
   }, [user, navigate]);
+
+    // **NEW: ramifica según rol**
+
 
   // Estados
   const [reportType, setReportType] = useState("");
@@ -40,6 +43,18 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setDescription("");
+    setReportData(null);
+    // (opcional) también limpias otros campos según necesites:
+    // setSelectedMachine("");
+    // setSelectedUser("");
+    // setDateFrom("");
+    // setDateTo("");
+    // setYear("");
+  }, [reportType]);
+
 
   // Carga años para annualValue
   useEffect(() => {
@@ -107,8 +122,9 @@ export default function ReportsPage() {
         data = await generateReport({ reportType, dateFrom, dateTo, year });
       }
       setReportData(data);
-    } catch {
-      setError("Error generando el reporte.");
+      } catch (err) {
+        console.error("Error generando reporte:", err);
+        setError(err.message || "Error generando el reporte.");
     } finally {
       setLoading(false);
     }
@@ -124,6 +140,72 @@ export default function ReportsPage() {
         .save();
     });
   };
+
+    if (user?.role === "colaborador") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="container mx-auto p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            Reportes de Máquinas (Colaborador)
+          </h2>
+          <form onSubmit={handleGenerate} className="bg-white rounded-lg shadow p-6 space-y-4">
+            {error && <div className="text-red-600 bg-red-100 p-2 rounded">{error}</div>}
+
+            {/* Selector de máquina */}
+            <div>
+              <label className="block mb-1 font-medium text-gray-700">Máquina</label>
+              <select
+                value={selectedMachine}
+                onChange={e => setSelectedMachine(e.target.value)}
+                className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                disabled={loadingMachines}
+                required
+              >
+                <option value="" disabled>
+                  {loadingMachines ? "Cargando máquinas..." : "Selecciona una máquina"}
+                </option>
+                {machines.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Fecha del reporte */}
+            <div>
+              <label className="block mb-1 font-medium text-gray-700">Fecha del reporte</label>
+              <input
+                type="date"
+                value={reportDate}
+                onChange={e => setReportDate(e.target.value)}
+                className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring"
+                required
+              />
+            </div>
+
+            {/* Descripción del problema */}
+            <div>
+              <label className="block mb-1 font-medium text-gray-700">Descripción del problema</label>
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring h-24"
+                placeholder="Describe aquí el problema"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-primary hover:bg-primary-dark text-white font-semibold py-2 px-4 rounded transition disabled:opacity-50"
+            >
+              {loading ? "Enviando..." : "Enviar reporte"}
+            </button>
+          </form>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
