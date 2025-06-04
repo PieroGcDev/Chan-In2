@@ -160,3 +160,25 @@ export async function fetchUserReports(user_id) {
   if (error) throw error;
   return data;
 }
+
+export async function fetchAllUserReports() {
+  const { data, error } = await supabase
+    .from("machine_reports")
+    .select(`
+      id,
+      report_date,
+      description,
+      created_at,
+      machines (
+        name
+      ),
+      profiles:profiles!machine_reports_user_id_fkey (
+        nombre,
+        apellido
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}

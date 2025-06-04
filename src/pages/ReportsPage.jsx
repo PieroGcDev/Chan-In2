@@ -9,7 +9,8 @@ import {
   fetchMachineReport,
   fetchUsersList,
   insertUserReport,
-  fetchUserReports
+  fetchUserReports,
+  fetchAllUserReports
 } from "../services/reportService";
 
 export default function ReportsPage() {
@@ -24,7 +25,6 @@ export default function ReportsPage() {
   }, [user, navigate]);
 
     // **NEW: ramifica según rol**
-
 
   // Estados
   const [reportType, setReportType] = useState("");
@@ -45,10 +45,12 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState("");
-  // Controla si se muestra el menú desplegable de Historial
-const [showHistoryMenu, setShowHistoryMenu] = useState(false);
-// Indica qué tipo de historial está seleccionado
-const [historyType, setHistoryType] = useState("");
+  const [showHistoryMenu, setShowHistoryMenu] = useState(false);
+  const [historyType, setHistoryType] = useState("");
+  const [allReports, setAllReports] = useState([]);
+  const [employeeHistory, setEmployeeHistory] = useState([]);
+  const [annualHistory, setAnnualHistory] = useState([]);
+  const [summaryDescription, setSummaryDescription] = useState("");
 
 
   useEffect(() => {
@@ -121,6 +123,82 @@ useEffect(() => {
   }
 }, [user, fetchMachinesList]);
 
+useEffect(() => {
+  // Si el Admin pidió “Historial de máquinas”
+  if (historyType === "machines" && user?.role === "admin") {
+    fetchAllUserReports()
+      .then((list) => setAllReports(list))
+      .catch((err) => console.error("Error cargando reportes de máquinas:", err));
+  }
+
+  // Si el Admin pidió “Historial de empleados”
+  if (historyType === "employees" && user?.role === "admin") {
+    // Usaremos un rango muy amplio: desde 1970 hasta hoy, por ejemplo
+    const desde = "1970-01-01";
+    const hasta = new Date().toISOString().slice(0, 10);
+
+    generateReport({ reportType: "employees", dateFrom: desde, dateTo: hasta })
+      .then((data) => {
+        // data será algo como: [{ user_id: "...", count: X, totalQuantity: Y }, …]
+        setEmployeeHistory(data);
+      })
+      .catch((err) => console.error("Error cargando historial de empleados:", err));
+  }
+
+  // Si el Admin pidió “Historial valor anual”
+  if (historyType === "annualValue" && user?.role === "admin") {
+    // 1) Primero, traer todos los años disponibles
+    fetchReportYears()
+      .then(async (listaAnios) => {
+        // 2) Para cada año, llamar a generateReport para ese año
+        const resultados = [];
+        for (const y of listaAnios) {
+          try {
+            const { total } = await generateReport({ reportType: "annualValue", year: y });
+            resultados.push({ year: y, total });
+          } catch (err) {
+            console.error(`Error cargando valor anual para ${y}:`, err);
+          }
+        }
+        setAnnualHistory(resultados);
+      })
+      .catch((err) => console.error("Error cargando años para valor anual:", err));
+  }
+}, [historyType, user]);
+
+useEffect(() => {
+  if (reportType === "employees") {
+    setDateFrom("");
+    setDateTo("");
+    setDescription("");
+    // (Opcional) también podrías resetear summaryDescription aquí si quieres
+    // setSummaryDescription("");
+  }
+}, [selectedUser, reportType]);
+
+useEffect(() => {
+  if (reportType === "employees") {
+    // Limpiamos fechas y textarea
+    setDateFrom("");
+    setDateTo("");
+    setDescription("");
+
+    // + Limpiamos el resumen y cualquier reporte anterior
+    setSummaryDescription("");
+    setReportData(null);
+  }
+}, [selectedUser, reportType]);
+
+useEffect(() => {
+  if (reportType === "machines") {
+    // Limpiar descripción y reporte anterior al cambiar de máquina
+    setSummaryDescription("");
+    setReportData(null);
+    // (Opcional) si el campo “Fecha del reporte” debes resetearlo, podrías hacer:
+    // setReportDate(new Date().toISOString().slice(0, 10));
+  }
+}, [selectedMachine, reportType]);
+
   const handleGenerate = async (e) => {
     e.preventDefault();
     setError("");
@@ -146,12 +224,17 @@ useEffect(() => {
       }
 
       try {
-        // 1) Inserta el reporte en machine_reports
-        await insertUserReport({
-          machine_id: selectedMachine,
-          user_id: user.id,
-          report_date: reportDate,
-          description,
+      // Guardamos descripción para el Resumen y vaciamos el textarea
+      setSummaryDescription(description);
+      setDescription("");
+  
+      // 1) Inserta el reporte en machine_reports
+      await insertUserReport({
+        machine_id: selectedMachine,
+        user_id: user.id,
+        report_date: reportDate,
+        description: summaryDescription, // o description original, según prefieras
+        description,
         });
 
         // 2) Recarga “Mis reportes” para mostrarlo de inmediato
@@ -192,19 +275,23 @@ useEffect(() => {
     }
 
     try {
-      let data;
-      if (reportType === "machines") {
-        data = await fetchMachineReport(selectedMachine);
-      } else {
-        data = await generateReport({ reportType, dateFrom, dateTo, year });
+        // 1) Guardamos la descripción en summaryDescription y limpiamos el campo
+        setSummaryDescription(description);
+        setDescription("");
+    
+        let data;
+        if (reportType === "machines") {
+          data = await fetchMachineReport(selectedMachine);
+        } else {
+          data = await generateReport({ reportType, dateFrom, dateTo, year });
+        }
+        setReportData(data);
+      } catch (err) {
+        console.error("Error generando reporte:", err);
+        setError(err.message || "Error generando el reporte.");
+      } finally {
+        setLoading(false);
       }
-      setReportData(data);
-    } catch (err) {
-      console.error("Error generando reporte:", err);
-      setError(err.message || "Error generando el reporte.");
-    } finally {
-      setLoading(false);
-    }
 
     // Validaciones
     if (reportType === "machines" && !selectedMachine) {
@@ -568,26 +655,155 @@ useEffect(() => {
 
         {/* Mostrar resultados */}
         {reportData && (
-           <div id="report-content" className="mt-6 bg-white rounded-lg shadow p-6">
+          <div id="report-content" className="mt-6 bg-white rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Resumen del Reporte</h3>
-            <p><strong>Máquina:</strong> {machines.find(m => m.id === selectedMachine)?.name}</p>
-            <p><strong>Fecha del reporte:</strong> {reportDate}</p>
-            <p><strong>Descripción:</strong> {description}</p>
 
-            <h4 className="mt-4 font-medium">Movimientos:</h4>
-            <pre className="text-sm bg-gray-100 p-4 rounded overflow-auto whitespace-pre-wrap">
-              {reportData}
-            </pre>
+            {reportType === "machines" && (
+              <>
+                <p>
+                  <strong>Máquina:</strong>{" "}
+                  {machines.find((m) => m.id === selectedMachine)?.name || "—"}
+                </p>
+                <p>
+                  <strong>Fecha del reporte:</strong> {reportDate}
+                </p>
+                <p>
+                  <strong>Descripción:</strong> {summaryDescription}
+                </p>
 
-            <button
-              onClick={exportPDF}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2"
-            >
-              Exportar reporte
-            </button>
-           </div>
+                {/* Movimientos (solo para reporte de máquinas) */}
+                <h4 className="mt-4 font-medium">Movimientos:</h4>
+                <pre className="text-sm bg-gray-100 p-4 rounded overflow-auto whitespace-pre-wrap">
+                  {reportData}
+                </pre>
+
+                <button
+                  onClick={exportPDF}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2"
+                >
+                  Exportar reporte
+                </button>
+              </>
+            )}
+
+            {reportType === "employees" && (
+              <>
+                <p>
+                  <strong>Empleado:</strong>{" "}
+                  {users.find((u) => u.id === selectedUser)?.name || "—"}
+                </p>
+                <p>
+                  <strong>Fecha desde:</strong> {dateFrom}{" "}
+                  <strong>Fecha hasta:</strong> {dateTo}
+                </p>
+                <p>
+                  <strong>Descripción:</strong> {summaryDescription}
+                </p>
+              </>
+            )}
+
+            {reportType === "annualValue" && (
+              <>
+                <p>
+                  <strong>Año:</strong> {year}
+                </p>
+                <p>
+                  <strong>Descripción:</strong> {summaryDescription}
+                </p>
+              </>
+            )}
+          </div>
         )}
 
+
+        {/* === HISTORIAL DE MÁQUINAS (Admin) === */}
+        {historyType === "machines" && allReports.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Historial de máquinas (colaboradores)</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2 border">Usuario</th>
+                    <th className="p-2 border">Máquina</th>
+                    <th className="p-2 border">Fecha de reporte</th>
+                    <th className="p-2 border">Descripción</th>
+                    <th className="p-2 border">Enviado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allReports.map((r) => (
+                    <tr key={r.id} className="border-t hover:bg-gray-50">
+                      {/* Asumimos que fetchAllUserReports devolvió r.profiles.{nombre,apellido} */}
+                      <td className="p-2 border">{`${r.profiles.nombre} ${r.profiles.apellido}`}</td>
+                      <td className="p-2 border">{r.machines.name}</td>
+                      <td className="p-2 border">{r.report_date}</td>
+                      <td className="p-2 border">{r.description}</td>
+                      <td className="p-2 border">
+                        {new Date(r.created_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* === HISTORIAL DE EMPLEADOS (Admin) === */}
+        {historyType === "employees" && employeeHistory.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Historial de empleados (todos los movimientos)</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2 border">Empleado</th>
+                    <th className="p-2 border">Movimientos totales</th>
+                    <th className="p-2 border">Cantidad total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employeeHistory.map((row) => (
+                    <tr key={row.user_id} className="border-t hover:bg-gray-50">
+                      {/* Buscamos el nombre con fetchUsersList (u.name) */}
+                      <td className="p-2 border">
+                        {users.find((u) => u.id === row.user_id)?.name || row.user_id}
+                      </td>
+                      <td className="p-2 border">{row.count}</td>
+                      <td className="p-2 border">{row.totalQuantity}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* === HISTORIAL VALOR ANUAL (Admin) === */}
+        {historyType === "annualValue" && annualHistory.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold mb-4">Historial Valor Monetario Anual</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2 border">Año</th>
+                    <th className="p-2 border">Total Monetario</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {annualHistory.map((entry) => (
+                    <tr key={entry.year} className="border-t hover:bg-gray-50">
+                      <td className="p-2 border">{entry.year}</td>
+                      <td className="p-2 border">{entry.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
