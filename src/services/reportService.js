@@ -121,7 +121,42 @@ export async function fetchUsersList() {
   const { data, error } = await supabase
     .from("profiles")
     .select("id, nombre, apellido")
-    .order("nombre");
+    .order("nombre", { ascending: true });
+  if (error) throw error;
+  // Combina nombre y apellido en un campo `name`
+  return data.map((u) => ({
+    id: u.id,
+    name: `${u.nombre} ${u.apellido}`,
+  }));
+}
+
+// src/services/reportService.js
+
+/**
+ * Inserta un nuevo reporte de colaborador.
+ */
+export async function insertUserReport({ machine_id, user_id, report_date, description }) {
+  const { data, error } = await supabase
+    .from("machine_reports")
+    .insert([
+      { machine_id, user_id, report_date, description }
+    ])
+    .select();  // <- Necesario para que 'data' contenga el registro insertado
+
+  if (error) throw error;
+  return data[0];
+}
+
+
+/**
+ * Recupera todos los reportes hechos por un usuario, más detalles de máquina.
+ */
+export async function fetchUserReports(user_id) {
+  const { data, error } = await supabase
+    .from("machine_reports")
+    .select("id, report_date, description, machines(name), created_at")
+    .eq("user_id", user_id)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createMachine, updateMachine, fetchMachineById } from "../services/machineService";
+import { fetchUsersList } from "../services/reportService";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function MachineForm() {
@@ -11,6 +12,7 @@ export default function MachineForm() {
     assigned_to: "",
     status: "",
   });
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(!!id);
 
   useEffect(() => {
@@ -27,6 +29,15 @@ export default function MachineForm() {
       };
       loadMachine();
     }
+       // Carga usuarios para el select “Asignado a”
+      fetchUsersList()
+        .then((list) => {
+          console.log("Usuarios cargados en MachineForm:", list);
+          setUsers(list);
+        })
+        .catch((err) => {
+          console.error("No se pudieron cargar los usuarios:", err);
+        });
   }, [id]);
 
   const handleChange = (e) => {
@@ -61,8 +72,40 @@ export default function MachineForm() {
       <form onSubmit={handleSubmit}>
         <input name="name" placeholder="Nombre" value={machine.name} onChange={handleChange} required className="w-full p-2 mb-4 border rounded" />
         <input name="code" placeholder="Código" value={machine.code} onChange={handleChange} required className="w-full p-2 mb-4 border rounded" />
-        <input name="assigned_to" placeholder="Asignado a" value={machine.assigned_to} onChange={handleChange} className="w-full p-2 mb-4 border rounded" />
-        <input name="status" placeholder="Estado" value={machine.status} onChange={handleChange} className="w-full p-2 mb-4 border rounded" />
+        <div className="mb-4">
+          <label className="block mb-1 font-medium text-gray-700">Asignado a</label>
+          <select
+            name="assigned_to"
+            value={machine.assigned_to}
+            onChange={handleChange}
+            className="w-full p-2 border rounded focus:outline-none focus:ring"
+          >
+            <option value="" disabled>
+              {users.length ? "Selecciona un usuario" : "Cargando usuarios..."}
+            </option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="mb-4">
+          <label className="block mb-1 font-medium text-gray-700">Estado</label>
+          <select
+            name="status"
+            value={machine.status}
+            onChange={handleChange}
+            className="w-full p-2 border rounded focus:outline-none focus:ring"
+            required
+          >
+            <option value="" disabled>
+              Selecciona estado
+            </option>
+            <option value="Operativa">Operativa</option>
+            <option value="No operativa">No operativa</option>
+          </select>
+        </div>
         <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">
           {id ? "Actualizar" : "Crear"}
         </button>

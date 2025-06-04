@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { fetchMachines, createMachine, deleteMachine, updateMachine } from "../services/machineService";
+import { fetchUsersList } from "../services/reportService";
 import Modal from "react-modal";
 import { useUser } from "../contexts/UserContext";
 
@@ -11,6 +12,7 @@ export default function MachinesPage() {
   const role = user?.role;
   const [machines, setMachines] = useState([]);
   const [form, setForm] = useState({ name: "", code: "", assigned_to: "", status: "" });
+  const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -26,6 +28,9 @@ export default function MachinesPage() {
 
   useEffect(() => {
     loadMachines();
+    fetchUsersList()
+      .then(list => setUsers(list))
+      .catch(() => console.error("No se pudieron cargar los usuarios."));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -93,12 +98,26 @@ export default function MachinesPage() {
               {role === "admin" && <th className="p-3 border">Acciones</th>}
             </tr>
           </thead>
+          
           <tbody className="text-center">
             {machines.map((m) => (
               <tr key={m.id} className="border-b hover:bg-gray-50">
+                {/* Columna Nombre */}
                 <td className="p-3 border">{m.name}</td>
+
+                {/* Columna Código */}
                 <td className="p-3 border">{m.code}</td>
-                <td className="p-3 border">{m.assigned_to ?? "—"}</td>
+
+                {/* Columna Asignado a → aquí usamos `users` para mostrar `u.name` */}
+                <td className="p-3 border">
+                  {/*
+                    Buscamos en `users` el objeto cuyo `id` coincida con `m.assigned_to`.
+                    Si no lo encuentra (p. ej. no está asignado), mostramos “—”.
+                  */}
+                  {users.find((u) => u.id === m.assigned_to)?.name || "—"}
+                </td>
+
+                {/* Columna Estado */}
                 <td className="p-3 border">
                   {role === "admin" ? (
                     <select
@@ -108,17 +127,25 @@ export default function MachinesPage() {
                         m.status === "Operativa" ? "bg-green-500" : "bg-red-500"
                       }`}
                     >
-                      <option value="Operativa" className="text-black">Operativa</option>
-                      <option value="No operativa" className="text-black">No operativa</option>
+                      <option value="Operativa" className="text-black">
+                        Operativa
+                      </option>
+                      <option value="No operativa" className="text-black">
+                        No operativa
+                      </option>
                     </select>
                   ) : (
-                    <span className={`px-2 py-1 rounded text-white font-bold ${
-                      m.status === "Operativa" ? "bg-green-500" : "bg-red-500"
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-white font-bold ${
+                        m.status === "Operativa" ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    >
                       {m.status}
                     </span>
                   )}
                 </td>
+
+                {/* Columna Acciones (sólo para admin) */}
                 {role === "admin" && (
                   <td className="p-3 border space-x-2">
                     <button
@@ -154,8 +181,36 @@ export default function MachinesPage() {
           {error && <p className="text-red-600">{error}</p>}
           <input type="text" placeholder="Nombre" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full p-2 border rounded" required />
           <input type="text" placeholder="Código" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} className="w-full p-2 border rounded" required />
-          <input type="text" placeholder="Asignado a" value={form.assigned_to} onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))} className="w-full p-2 border rounded" />
-          <input type="text" placeholder="Estado" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className="w-full p-2 border rounded" required />
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">Asignado a</label>
+            <select
+              value={form.assigned_to}
+              onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))}
+              className="w-full p-2 border rounded focus:outline-none focus:ring"
+            >
+              <option value="" disabled>
+                {users.length ? "Selecciona un usuario" : "Cargando usuarios..."}
+              </option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">Estado</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+              className="w-full p-2 border rounded focus:outline-none focus:ring"
+              required
+            >
+              <option value="" disabled>Selecciona estado</option>
+              <option value="Operativa">Operativa</option>
+              <option value="No operativa">No operativa</option>
+            </select>
+          </div>
           <div className="flex justify-end">
             <button type="button" onClick={() => setShowForm(false)} className="mr-2 bg-gray-300 py-2 px-4 rounded">Cancelar</button>
             <button type="submit" className="bg-primary text-white py-2 px-4 rounded hover:bg-primary-dark">Crear Máquina</button>
