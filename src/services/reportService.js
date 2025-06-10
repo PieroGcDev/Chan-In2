@@ -182,3 +182,87 @@ export async function fetchAllUserReports() {
   if (error) throw error;
   return data;
 }
+
+export async function insertEmployeeReport({
+  user_id,
+  dateFrom,
+  dateTo,
+  description,
+}) {
+  const { data, error } = await supabase
+    .from("employee_reports")
+    .insert([
+      {
+        user_id,
+        date_from: dateFrom,
+        date_to: dateTo,
+        description,
+      },
+    ])
+    .select(); // Para que devuelva el objeto insertado
+  if (error) throw error;
+  return data[0];
+}
+
+// --------------------------------------------
+// 2.2. Función para traer todos los reportes de Empleados
+// --------------------------------------------
+export async function fetchEmployeeReports() {
+  // Incluye nombre del usuario a través de perfiles
+  const { data, error } = await supabase
+    .from("employee_reports")
+    .select(`
+      id,
+      date_from,
+      date_to,
+      description,
+      generated_at,
+      profiles:profiles!employee_reports_user_id_fkey (
+        nombre,
+        apellido
+      )
+    `)
+    .order("generated_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+// --------------------------------------------
+// 2.3. Función para guardar reporte Valor Anual
+// --------------------------------------------
+export async function insertAnnualValueReport({
+  year,
+  totalValue,
+  description,
+}) {
+  const { data, error } = await supabase
+    .from("annual_value_reports")
+    .insert([
+      {
+        year,
+        total_value: totalValue,
+        description,
+      },
+    ])
+    .select();
+  if (error) throw error;
+  return data[0];
+}
+
+// --------------------------------------------
+// 2.4. Función para traer todos los reportes Valor Anual
+// --------------------------------------------
+export async function fetchAnnualValueReports() {
+  const { data, error } = await supabase
+    .from("annual_value_reports")
+    .select(`
+      id,
+      year,
+      total_value,
+      description,
+      generated_at
+    `)
+    .order("year", { ascending: false });
+  if (error) throw error;
+  return data;
+}

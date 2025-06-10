@@ -10,7 +10,11 @@ import {
   fetchUsersList,
   insertUserReport,
   fetchUserReports,
-  fetchAllUserReports
+  fetchAllUserReports,
+  insertEmployeeReport,
+  fetchEmployeeReports,
+  insertAnnualValueReport,
+  fetchAnnualValueReports,
 } from "../services/reportService";
 
 export default function ReportsPage() {
@@ -51,7 +55,8 @@ export default function ReportsPage() {
   const [employeeHistory, setEmployeeHistory] = useState([]);
   const [annualHistory, setAnnualHistory] = useState([]);
   const [summaryDescription, setSummaryDescription] = useState("");
-
+  const [employeeReports, setEmployeeReports] = useState([]);
+  const [annualReports, setAnnualReports] = useState([]);
 
   useEffect(() => {
     setDescription("");
@@ -133,38 +138,21 @@ useEffect(() => {
 
   // Si el Admin pidió “Historial de empleados”
   if (historyType === "employees" && user?.role === "admin") {
-    // Usaremos un rango muy amplio: desde 1970 hasta hoy, por ejemplo
-    const desde = "1970-01-01";
-    const hasta = new Date().toISOString().slice(0, 10);
-
-    generateReport({ reportType: "employees", dateFrom: desde, dateTo: hasta })
-      .then((data) => {
-        // data será algo como: [{ user_id: "...", count: X, totalQuantity: Y }, …]
-        setEmployeeHistory(data);
-      })
-      .catch((err) => console.error("Error cargando historial de empleados:", err));
+    // Llama a la nueva función que lee la tabla employee_reports
+    fetchEmployeeReports()
+      .then((list) => setEmployeeReports(list))
+      .catch((err) => console.error("Error cargando employee_reports:", err));
   }
 
   // Si el Admin pidió “Historial valor anual”
   if (historyType === "annualValue" && user?.role === "admin") {
-    // 1) Primero, traer todos los años disponibles
-    fetchReportYears()
-      .then(async (listaAnios) => {
-        // 2) Para cada año, llamar a generateReport para ese año
-        const resultados = [];
-        for (const y of listaAnios) {
-          try {
-            const { total } = await generateReport({ reportType: "annualValue", year: y });
-            resultados.push({ year: y, total });
-          } catch (err) {
-            console.error(`Error cargando valor anual para ${y}:`, err);
-          }
-        }
-        setAnnualHistory(resultados);
-      })
-      .catch((err) => console.error("Error cargando años para valor anual:", err));
+    // Llama a la nueva función que lee la tabla annual_value_reports
+    fetchAnnualValueReports()
+      .then((list) => setAnnualReports(list))
+      .catch((err) => console.error("Error cargando annual_value_reports:", err));
   }
 }, [historyType, user]);
+
 
 useEffect(() => {
   if (reportType === "employees") {
@@ -234,7 +222,6 @@ useEffect(() => {
         user_id: user.id,
         report_date: reportDate,
         description: summaryDescription, // o description original, según prefieras
-        description,
         });
 
         // 2) Recarga “Mis reportes” para mostrarlo de inmediato
@@ -257,7 +244,7 @@ useEffect(() => {
     }
 
     // --- Flujo para ADMIN ---
-    // Validaciones de Admin
+    // 1) Validaciones iniciales de Admin
     if (reportType === "machines" && !selectedMachine) {
       setError("Por favor selecciona una máquina.");
       setLoading(false);
@@ -268,57 +255,102 @@ useEffect(() => {
       setLoading(false);
       return;
     }
-    if (reportType === "employees" && (!dateFrom || !dateTo)) {
-      setError("Por favor define ambas fechas.");
+    if (reportType === "employees" && (!selectedUser || !dateFrom || !dateTo)) {
+      setError("Por favor define todas las fechas y selecciona el empleado.");
       setLoading(false);
       return;
     }
 
-    try {
-        // 1) Guardamos la descripción en summaryDescription y limpiamos el campo
+    // 2) Insertar/Generar “Empleados”
+    if (reportType === "employees") {
+      try {
+        // 2.1) Guardamos la descripción
         setSummaryDescription(description);
         setDescription("");
-    
-        let data;
-        if (reportType === "machines") {
-          data = await fetchMachineReport(selectedMachine);
-        } else {
-          data = await generateReport({ reportType, dateFrom, dateTo, year });
-        }
-        setReportData(data);
+
+        // 2.2) Generamos el conteo (opcional, para mostrar en pantalla)
+        const reportResults = await generateReport({
+          reportType: "employees",
+          dateFrom,
+          dateTo,
+        });
+
+        // 2.3) Insertamos en la tabla employee_reports
+        await insertEmployeeReport({
+          user_id: selectedUser,
+          dateFrom,
+          dateTo,
+          description: summaryDescription,
+        });
+
+        // 2.4) Mostramos en pantalla el resultado del conteo
+        setReportData(reportResults);
+
+        // 2.5) Recargamos el historial de empleados
+        fetchEmployeeReports()
+          .then((list) => setEmployeeReports(list))
+          .catch((err) =>
+            console.error("Error recargando employeeReports:", err)
+          );
       } catch (err) {
-        console.error("Error generando reporte:", err);
-        setError(err.message || "Error generando el reporte.");
+        console.error("Error guardando/generando reporte de empleados:", err);
+        setError("No se pudo guardar el reporte de empleados.");
       } finally {
         setLoading(false);
       }
-
-    // Validaciones
-    if (reportType === "machines" && !selectedMachine) {
-      setError("Por favor selecciona una máquina.");
-      return;
-    }
-    if (reportType === "annualValue" && !year) {
-      setError("Por favor elige un año.");
-      return;
-    }
-    if (reportType === "employees" && (!dateFrom || !dateTo)) {
-      setError("Por favor define ambas fechas.");
       return;
     }
 
-    setLoading(true);
-    try {
-      let data;
-      if (reportType === "machines") {
-        data = await fetchMachineReport(selectedMachine);
-      } else {
-        data = await generateReport({ reportType, dateFrom, dateTo, year });
-      }
-      setReportData(data);
+    // 3) Insertar/Generar “Valor monetario anual”
+    if (reportType === "annualValue") {
+      try {
+        // 3.1) Guardamos la descripción
+        setSummaryDescription(description);
+        setDescription("");
+
+        // 3.2) Calculamos el total
+        const { total } = await generateReport({
+          reportType: "annualValue",
+          year,
+        });
+
+        // 3.3) Insertamos en la tabla annual_value_reports
+        await insertAnnualValueReport({
+          year,
+          totalValue: total,
+          description: summaryDescription,
+        });
+
+        // 3.4) Mostramos en pantalla el total
+        setReportData({ year, total });
+
+        // 3.5) Recargamos el historial de valor anual
+        fetchAnnualValueReports()
+          .then((list) => setAnnualReports(list))
+          .catch((err) =>
+            console.error("Error recargando annualReports:", err)
+          );
       } catch (err) {
-        console.error("Error generando reporte:", err);
-        setError(err.message || "Error generando el reporte.");
+        console.error("Error guardando/generando reporte valor anual:", err);
+        setError("No se pudo guardar el reporte valor anual.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // 4) Flujo original “Máquinas”
+    try {
+      // 4.1) Guardamos la descripción
+      setSummaryDescription(description);
+      setDescription("");
+
+      // 4.2) Generamos el reporte de máquina
+      const data = await fetchMachineReport(selectedMachine);
+      setReportData(data);
+    } catch (err) {
+      console.error("Error generando reporte de máquinas:", err);
+      setError(err.message || "Error generando el reporte de máquinas.");
     } finally {
       setLoading(false);
     }
@@ -751,7 +783,7 @@ useEffect(() => {
         )}
 
         {/* === HISTORIAL DE EMPLEADOS (Admin) === */}
-        {historyType === "employees" && employeeHistory.length > 0 && (
+        {historyType === "employees" && employeeReports.length > 0 && (
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Historial de empleados (todos los movimientos)</h3>
             <div className="overflow-x-auto">
@@ -759,19 +791,24 @@ useEffect(() => {
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="p-2 border">Empleado</th>
-                    <th className="p-2 border">Movimientos totales</th>
-                    <th className="p-2 border">Cantidad total</th>
+                    <th className="p-2 border">Fecha de inicio</th>
+                    <th className="p-2 border">Fecha de fin</th>
+                    <th className="p-2 border">Descripción</th>
+                    <th className="p-2 border">Generado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {employeeHistory.map((row) => (
-                    <tr key={row.user_id} className="border-t hover:bg-gray-50">
-                      {/* Buscamos el nombre con fetchUsersList (u.name) */}
+                  {employeeReports.map((r) => (
+                    <tr key={r.id} className="border-t hover:bg-gray-50">
                       <td className="p-2 border">
-                        {users.find((u) => u.id === row.user_id)?.name || row.user_id}
+                        {`${r.profiles.nombre} ${r.profiles.apellido}`}
                       </td>
-                      <td className="p-2 border">{row.count}</td>
-                      <td className="p-2 border">{row.totalQuantity}</td>
+                      <td className="p-2 border">{r.date_from}</td>
+                      <td className="p-2 border">{r.date_to}</td>
+                      <td className="p-2 border">{r.description}</td>
+                      <td className="p-2 border">
+                        {new Date(r.generated_at).toLocaleString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -781,7 +818,7 @@ useEffect(() => {
         )}
 
         {/* === HISTORIAL VALOR ANUAL (Admin) === */}
-        {historyType === "annualValue" && annualHistory.length > 0 && (
+        {historyType === "annualValue" && annualReports.length > 0 && (
           <div className="mt-8">
             <h3 className="text-xl font-semibold mb-4">Historial Valor Monetario Anual</h3>
             <div className="overflow-x-auto">
@@ -793,7 +830,7 @@ useEffect(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  {annualHistory.map((entry) => (
+                  {annualReports.map((entry) => (
                     <tr key={entry.year} className="border-t hover:bg-gray-50">
                       <td className="p-2 border">{entry.year}</td>
                       <td className="p-2 border">{entry.total}</td>
