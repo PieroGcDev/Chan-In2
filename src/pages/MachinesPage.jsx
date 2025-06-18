@@ -149,6 +149,7 @@ export default function MachinesPage() {
               <th className="p-3 border">Estado</th>
               {role === "admin" && <th className="p-3 border">Acciones</th>}
               <th className="p-3 border">Visualizar Stock</th>
+              <th className="p-3 border">Ubicación</th>
             </tr>
           </thead>
           <tbody className="text-center">
@@ -182,6 +183,11 @@ export default function MachinesPage() {
                 <td className="p-3 border">
                   <button className="text-green-500 hover:underline" onClick={() => navigate(`/machines/${m.id}/products`)}>Ver Productos</button>
                 </td>
+                <td className="p-3 border">
+                  {/* Concatenamos departamento, ciudad, distrito y dirección */}
+                  {`${m.department || "—"}, ${m.city || "—"}, ${m.district || "—"} ${m.address || ""}`}
+                </td>
+                            
               </tr>
             ))}
           </tbody>
