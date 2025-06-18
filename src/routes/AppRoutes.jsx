@@ -89,7 +89,10 @@ export const AppRoutes = () => {
           }
         />
 
-        <Route path="/machines/:machineId/products" component={MachineProductsPage} />
+        <Route
+          path="/machines/:machineId/products"
+          element={<MachineProductsPage />} // Aquí debería estar el componente que muestra los productos de la máquina
+        />
 
         <Route
           path="/machines/edit/:id"
