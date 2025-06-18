@@ -96,6 +96,7 @@ export default function MachinesPage() {
               <th className="p-3 border">Asignado a</th>
               <th className="p-3 border">Estado</th>
               {role === "admin" && <th className="p-3 border">Acciones</th>}
+              <th className="p-3 border">Visualizar Stock</th>
             </tr>
           </thead>
           
