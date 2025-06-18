@@ -108,12 +108,8 @@ export default function MachinesPage() {
                 {/* Columna Código */}
                 <td className="p-3 border">{m.code}</td>
 
-                {/* Columna Asignado a → aquí usamos `users` para mostrar `u.name` */}
+                {/* Columna Asignado a */}
                 <td className="p-3 border">
-                  {/*
-                    Buscamos en `users` el objeto cuyo `id` coincida con `m.assigned_to`.
-                    Si no lo encuentra (p. ej. no está asignado), mostramos “—”.
-                  */}
                   {users.find((u) => u.id === m.assigned_to)?.name || "—"}
                 </td>
 
@@ -162,9 +158,20 @@ export default function MachinesPage() {
                     </button>
                   </td>
                 )}
+
+                {/* Columna Ver Productos */}
+                <td className="p-3 border">
+                  <button
+                    className="text-green-500 hover:underline"
+                    onClick={() => navigate(`/machines/${m.id}/products`)}
+                  >
+                    Ver Productos
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
+
         </table>
       </div>
 

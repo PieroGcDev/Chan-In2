@@ -13,6 +13,7 @@ import ResetPassword from "../pages/ResetPassword";
 import { useUser } from "../contexts/UserContext";
 import ScannerPage from "../pages/ScannerPage";
 import MachineForm from "../pages/MachineForm";
+import MachineProductsPage from "../pages/MachineProductsPage"; // Ajusta la ruta según sea necesario
 
 export const AppRoutes = () => {
   const { user, loading } = useUser();
@@ -87,6 +88,8 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/machines/:machineId/products" component={MachineProductsPage} />
 
         <Route
           path="/machines/edit/:id"

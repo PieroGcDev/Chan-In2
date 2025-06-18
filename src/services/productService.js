@@ -48,3 +48,14 @@ export const fetchProductByBarcode = async (barcode) => {
   if (error) throw error;
   return data;
 };
+
+// Obtener productos de una máquina por su ID
+export const fetchMachineProducts = async (machineId) => {
+  const { data, error } = await supabase
+    .from("products")  // Suponiendo que tu tabla de productos se llama 'products'
+    .select("*")
+    .eq("machine_id", machineId); // Asegúrate de que 'machine_id' sea el campo en la tabla 'products' que vincula un producto con su máquina
+
+  if (error) throw error;
+  return data;
+};

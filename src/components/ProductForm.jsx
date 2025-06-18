@@ -5,6 +5,7 @@ import {
   fetchProductById
 } from '../services/productService';
 import { useNavigate, useParams } from 'react-router-dom';
+import { fetchMachines } from '../services/machineService'; // Asegúrate de tener el servicio para obtener las máquinas
 
 export default function ProductForm() {
   const { id } = useParams();
@@ -17,16 +18,34 @@ export default function ProductForm() {
     description: '',
     barcode: '',
     price: '',
-    image_url: ''
+    image_url: '',
+    machine_id: '' // Agregado para almacenar la máquina seleccionada
   });
 
+  const [machines, setMachines] = useState([]); // Estado para las máquinas
   const [loading, setLoading] = useState(!!id);
 
+  // Cargar las máquinas disponibles
+  useEffect(() => {
+    const loadMachines = async () => {
+      try {
+        const data = await fetchMachines();
+        setMachines(data);
+      } catch (err) {
+        console.error("Error al cargar máquinas:", err);
+      }
+    };
+    loadMachines();
+  }, []);
+
+  // Cargar el producto para editarlo
   useEffect(() => {
     const loadProduct = async () => {
       try {
-        const data = await fetchProductById(id);
-        setProduct(data);
+        if (id) {
+          const data = await fetchProductById(id);
+          setProduct(data);
+        }
       } catch (err) {
         console.error("Error al cargar producto:", err);
       } finally {
@@ -55,7 +74,7 @@ export default function ProductForm() {
       } else {
         await addProduct(product);
       }
-      navigate('/products');
+      navigate('/products'); // Redirigir a la lista de productos después de añadir o editar
     } catch (error) {
       console.error('Error al guardar el producto:', error);
     }
@@ -149,6 +168,25 @@ export default function ProductForm() {
               className="w-24 h-24 object-cover rounded mt-2 border"
             />
           )}
+        </div>
+
+        {/* Menú desplegable para seleccionar la máquina */}
+        <div>
+          <label className="block text-gray-700">Seleccionar Máquina</label>
+          <select
+            name="machine_id"
+            value={product.machine_id || ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+            required
+          >
+            <option value="" disabled>Selecciona una máquina</option>
+            {machines.map((machine) => (
+              <option key={machine.id} value={machine.id}>
+                {machine.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <button type="submit" className="bg-primary text-white px-4 py-2 rounded">

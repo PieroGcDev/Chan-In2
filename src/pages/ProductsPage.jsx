@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { fetchProducts, deleteProduct } from "../services/productService";
+import { fetchProducts, deleteProduct, addProduct } from "../services/productService";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
+import { fetchMachines } from "../services/machineService"; // Servicio para obtener las máquinas
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
+  const [machines, setMachines] = useState([]); // Estado para las máquinas
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const { user } = useUser();
   const role = user?.role || "guest";
 
+  // Cargar los productos
   const loadProducts = async () => {
     try {
       const data = await fetchProducts();
@@ -19,8 +22,19 @@ export default function ProductsPage() {
     }
   };
 
+  // Cargar las máquinas
+  const loadMachines = async () => {
+    try {
+      const data = await fetchMachines();
+      setMachines(data);
+    } catch (err) {
+      console.error("Error al cargar máquinas:", err);
+    }
+  };
+
   useEffect(() => {
     loadProducts();
+    loadMachines(); // Llamar a la carga de máquinas cuando se monta el componente
   }, []);
 
   const handleDelete = async (id) => {
@@ -40,6 +54,25 @@ export default function ProductsPage() {
       p.name?.toLowerCase().includes(search.toLowerCase()) ||
       p.sku?.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Manejar el formulario de añadir producto
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const form = new FormData(e.target);
+    const newProduct = {
+      name: form.get("name"),
+      stock: form.get("stock"),
+      machine_id: form.get("machine_id"),
+    };
+
+    try {
+      await addProduct(newProduct); // Llamada a la función de añadir producto
+      await loadProducts(); // Recargar productos
+      navigate("/products"); // Redirigir a la página de productos
+    } catch (err) {
+      console.error("Error al añadir producto:", err);
+    }
+  };
 
   return (
     <div className="bg-bg-light min-h-screen p-6">
@@ -80,6 +113,7 @@ export default function ProductsPage() {
                 <th className="p-2">Stock</th>
                 <th className="p-2">Precio</th>
                 <th className="p-2">Código de barras</th>
+                <th className="p-2">Máquina</th> {/* Nueva columna para la máquina */}
                 <th className="p-2">Creado</th>
                 {role === "admin" && <th className="p-2">Acciones</th>}
               </tr>
@@ -104,6 +138,10 @@ export default function ProductsPage() {
                   <td className="p-2">{p.stock}</td>
                   <td className="p-2">{p.price ?? "$0.00"}</td>
                   <td className="p-2">{p.barcode}</td>
+                  <td className="p-2">
+                    {/* Mostrar la máquina asociada */}
+                    {machines.find((machine) => machine.id === p.machine_id)?.name || "No asignada"}
+                  </td>
                   <td className="p-2">
                     {p.created_at ? new Date(p.created_at).toLocaleDateString() : ""}
                   </td>
