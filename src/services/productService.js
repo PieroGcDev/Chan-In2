@@ -14,25 +14,39 @@ export const fetchProductById = async (id) => {
   return data;
 };
 
+// Agregar un nuevo producto
 export const addProduct = async (product) => {
-  const { data, error } = await supabase.from("products").insert([product]);
+  const { data, error } = await supabase.from("products").insert([{
+    name: product.name,
+    sku: product.sku,
+    stock: product.stock,
+    price: product.price,
+    barcode: product.barcode,
+    machine_id: product.machine_id,
+    expiration_date: product.expiration_date,  // Incluir fecha de expiración
+  }]);
   if (error) throw error;
   return data;
 };
 
+// Actualizar un producto existente
 export const updateProduct = async (id, product) => {
   // Clonar y eliminar campos que no deberían actualizarse
   const { id: _, created_at, ...cleanProduct } = product;
 
   const { data, error } = await supabase
     .from("products")
-    .update(cleanProduct)
+    .update({
+      ...cleanProduct,
+      expiration_date: product.expiration_date,  // Incluir fecha de expiración
+    })
     .eq("id", id);
 
   if (error) throw error;
   return data;
 };
 
+// Eliminar un producto
 export const deleteProduct = async (id) => {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw error;
@@ -44,7 +58,7 @@ export const fetchProductByBarcode = async (barcode) => {
     .from("products")
     .select("*")
     .eq("barcode", barcode)
-    .single(); // ← solo uno
+    .single();
   if (error) throw error;
   return data;
 };
@@ -52,9 +66,9 @@ export const fetchProductByBarcode = async (barcode) => {
 // Obtener productos de una máquina por su ID
 export const fetchMachineProducts = async (machineId) => {
   const { data, error } = await supabase
-    .from("products")  // Suponiendo que tu tabla de productos se llama 'products'
+    .from("products")
     .select("*")
-    .eq("machine_id", machineId); // Asegúrate de que 'machine_id' sea el campo en la tabla 'products' que vincula un producto con su máquina
+    .eq("machine_id", machineId); // Relacionar producto con su máquina
 
   if (error) throw error;
   return data;

@@ -19,7 +19,8 @@ export default function ProductForm() {
     barcode: '',
     price: '',
     image_url: '',
-    machine_id: '' // Agregado para almacenar la máquina seleccionada
+    machine_id: '', // Agregado para almacenar la máquina seleccionada
+    expiration_date: '' // Agregado para la fecha de expiración
   });
 
   const [machines, setMachines] = useState([]); // Estado para las máquinas
@@ -70,9 +71,9 @@ export default function ProductForm() {
     e.preventDefault();
     try {
       if (id) {
-        await updateProduct(id, product);
+        await updateProduct(id, product);  // Asegúrate de que expiration_date sea enviado
       } else {
-        await addProduct(product);
+        await addProduct(product);  // Asegúrate de que expiration_date sea enviado
       }
       navigate('/products'); // Redirigir a la lista de productos después de añadir o editar
     } catch (error) {
@@ -187,6 +188,18 @@ export default function ProductForm() {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Campo de fecha de expiración */}
+        <div>
+          <label className="block text-gray-700">Fecha de Expiración</label>
+          <input
+            type="date"
+            name="expiration_date"
+            value={product.expiration_date || ""}
+            onChange={handleChange}
+            className="border rounded p-2 w-full"
+          />
         </div>
 
         <button type="submit" className="bg-primary text-white px-4 py-2 rounded">
