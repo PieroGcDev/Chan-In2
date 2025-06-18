@@ -113,8 +113,8 @@ export default function ProductsPage() {
                 <th className="p-2">Stock</th>
                 <th className="p-2">Precio</th>
                 <th className="p-2">Código de barras</th>
-                <th className="p-2">Fecha de Expiración</th> {/* Nueva columna para la fecha de expiración */}
-                <th className="p-2">Máquina</th> {/* Nueva columna para la máquina */}
+                <th className="p-2">Fecha de Expiración</th>
+                <th className="p-2">Máquina</th>
                 <th className="p-2">Creado</th>
                 {role === "admin" && <th className="p-2">Acciones</th>}
               </tr>
@@ -139,9 +139,8 @@ export default function ProductsPage() {
                   <td className="p-2">{p.stock}</td>
                   <td className="p-2">{p.price ?? "$0.00"}</td>
                   <td className="p-2">{p.barcode}</td>
-                  <td className="p-2">{p.expiration_date || "No especificada"}</td> {/* Mostrar la fecha de expiración */}
+                  <td className="p-2">{p.expiration_date || "No especificada"}</td>
                   <td className="p-2">
-                    {/* Mostrar la máquina asociada */}
                     {machines.find((machine) => machine.id === p.machine_id)?.name || "No asignada"}
                   </td>
                   <td className="p-2">
