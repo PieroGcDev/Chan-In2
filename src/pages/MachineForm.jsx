@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createMachine, updateMachine, fetchMachineById } from "../services/machineService";
 import { fetchUsersList } from "../services/reportService";
 import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios"; // Si necesitas usar axios para obtener las ciudades y distritos
 
 export default function MachineForm() {
   const { id } = useParams();
@@ -11,9 +12,16 @@ export default function MachineForm() {
     code: "",
     assigned_to: "",
     status: "",
+    department: "",
+    city: "",
+    district: "",
+    address: "",  // Campo de dirección
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(!!id);
+  const [departments, setDepartments] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
 
   useEffect(() => {
     if (id) {
@@ -29,16 +37,41 @@ export default function MachineForm() {
       };
       loadMachine();
     }
-       // Carga usuarios para el select “Asignado a”
-      fetchUsersList()
-        .then((list) => {
-          console.log("Usuarios cargados en MachineForm:", list);
-          setUsers(list);
-        })
-        .catch((err) => {
-          console.error("No se pudieron cargar los usuarios:", err);
-        });
-  }, [id]);
+
+    // Cargar usuarios para el select “Asignado a”
+    fetchUsersList()
+      .then((list) => {
+        console.log("Usuarios cargados en MachineForm:", list);
+        setUsers(list);
+      })
+      .catch((err) => {
+        console.error("No se pudieron cargar los usuarios:", err);
+      });
+
+    // Cargar datos de ubicación (departamentos, ciudades, distritos)
+    setDepartments(["Piura", "Lima", "Cusco"]);  // Agrega aquí los departamentos disponibles
+    if (machine.department) {
+      // Cargar las ciudades de acuerdo al departamento seleccionado
+      if (machine.department === "Piura") {
+        setCities(["Piura", "Chiclayo", "Trujillo"]);
+      } else if (machine.department === "Lima") {
+        setCities(["Lima", "Callao", "Cañete"]);
+      } else {
+        setCities([]);
+      }
+    }
+
+    if (machine.city) {
+      // Cargar los distritos de acuerdo a la ciudad seleccionada
+      if (machine.city === "Piura") {
+        setDistricts(["Sechura", "Paita"]);
+      } else if (machine.city === "Lima") {
+        setDistricts(["Miraflores", "San Isidro"]);
+      } else {
+        setDistricts([]);
+      }
+    }
+  }, [id, machine.department, machine.city]);  // Recargar ciudades y distritos cuando cambian los valores
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -70,8 +103,10 @@ export default function MachineForm() {
         {id ? "Editar Máquina" : "Nueva Máquina"}
       </h2>
       <form onSubmit={handleSubmit}>
-        <input name="name" placeholder="Nombre" value={machine.name} onChange={handleChange} required className="w-full p-2 mb-4 border rounded" />
+        <input name="name" placeholder="Nombre" value={machine.name || ""} onChange={handleChange} required className="w-full p-2 mb-4 border rounded" />
         <input name="code" placeholder="Código" value={machine.code} onChange={handleChange} required className="w-full p-2 mb-4 border rounded" />
+
+        {/* Asignado a */}
         <div className="mb-4">
           <label className="block mb-1 font-medium text-gray-700">Asignado a</label>
           <select
@@ -90,6 +125,8 @@ export default function MachineForm() {
             ))}
           </select>
         </div>
+
+        {/* Estado */}
         <div className="mb-4">
           <label className="block mb-1 font-medium text-gray-700">Estado</label>
           <select
@@ -106,6 +143,71 @@ export default function MachineForm() {
             <option value="No operativa">No operativa</option>
           </select>
         </div>
+
+        {/* Departamento */}
+        <div className="mb-4">
+          <label className="block mb-1 font-medium text-gray-700">Departamento</label>
+          <select
+            name="department"
+            value={machine.department || ""}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            required
+          >
+            <option value="">Selecciona un Departamento</option>
+            {departments.map((dep) => (
+              <option key={dep} value={dep}>{dep}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Ciudad */}
+        <div className="mb-4">
+          <label className="block mb-1 font-medium text-gray-700">Ciudad</label>
+          <select
+            name="city"
+            value={machine.city}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            required
+          >
+            <option value="">Selecciona una Ciudad</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Distrito */}
+        <div className="mb-4">
+          <label className="block mb-1 font-medium text-gray-700">Distrito</label>
+          <select
+            name="district"
+            value={machine.district}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            required
+          >
+            <option value="">Selecciona un Distrito</option>
+            {districts.map((district) => (
+              <option key={district} value={district}>{district}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Dirección */}
+        <div className="mb-4">
+          <label className="block mb-1 font-medium text-gray-700">Dirección Específica</label>
+          <input
+            name="address"
+            value={machine.address}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            placeholder="Ej. Avenida Sullana con Cusco"
+            required
+          />
+        </div>
+
         <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">
           {id ? "Actualizar" : "Crear"}
         </button>
