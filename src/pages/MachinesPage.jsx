@@ -148,6 +148,7 @@ export default function MachinesPage() {
               <th className="p-3 border">Asignado a</th>
               <th className="p-3 border">Estado</th>
               {role === "admin" && <th className="p-3 border">Acciones</th>}
+              {role === "colaborador" && <th className="p-3 border">Asignar Productos</th>}
               <th className="p-3 border">Visualizar Stock</th>
               <th className="p-3 border">Ubicación</th>
             </tr>
@@ -180,6 +181,18 @@ export default function MachinesPage() {
                     <button className="text-red-500 hover:underline" onClick={() => handleDelete(m.id)}>🗑️</button>
                   </td>
                 )}
+
+                {role === "colaborador" && (
+                  <td className="p-3 border">
+                    <button
+                      className="text-blue-500 hover:underline"
+                      onClick={() => navigate(`/machines/${m.id}/assign-products`)}  // Nueva ruta para asignar productos
+                    >
+                      Asignar Productos
+                    </button>
+                  </td>
+                )}
+
                 <td className="p-3 border">
                   <button className="text-green-500 hover:underline" onClick={() => navigate(`/machines/${m.id}/products`)}>Ver Productos</button>
                 </td>

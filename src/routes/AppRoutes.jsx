@@ -4,6 +4,7 @@ import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import ProductsPage from "../pages/ProductsPage";
 import MachinesPage from "../pages/MachinesPage";
+import AssignProductsPage from "../pages/AssignProductsPage";
 import UsersPage from "../pages/UsersPage";
 import ReportsPage from "../pages/ReportsPage";
 import ProductForm from "../components/ProductForm";
@@ -87,6 +88,11 @@ export const AppRoutes = () => {
               <MachinesPage />
             </ProtectedRoute>
           }
+        />
+
+        <Route
+          path="/machines/:machineId/assign-products"
+          element={<AssignProductsPage />}
         />
 
         <Route

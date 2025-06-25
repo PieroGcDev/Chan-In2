@@ -38,3 +38,12 @@ export const updateMachine = async (id, machine) => {
   return data;
 };
 
+// Asignar producto a una máquina
+export const assignProductToMachine = async (machineId, productId) => {
+  const { data, error } = await supabase
+    .from("machine_products") // Tabla de relación entre máquinas y productos
+    .insert([{ machine_id: machineId, product_id: productId }]);
+
+  if (error) throw error;
+  return data;
+};

@@ -73,3 +73,14 @@ export const fetchMachineProducts = async (machineId) => {
   if (error) throw error;
   return data;
 };
+
+// Actualizar el stock de un producto
+export const updateProductStock = async (productId, quantity) => {
+  const { data, error } = await supabase
+    .from("products")
+    .update({ stock: supabase.raw('stock - ?', [quantity]) }) // Disminuir el stock por la cantidad asignada
+    .eq("id", productId);
+
+  if (error) throw error;
+  return data;
+};

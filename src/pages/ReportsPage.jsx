@@ -212,23 +212,23 @@ useEffect(() => {
       }
 
       try {
-      // Guardamos descripción para el Resumen y vaciamos el textarea
-      setSummaryDescription(description);
-      setDescription("");
-  
-      // 1) Inserta el reporte en machine_reports
-      await insertUserReport({
-        machine_id: selectedMachine,
-        user_id: user.id,
-        report_date: reportDate,
-        description: summaryDescription, // o description original, según prefieras
+        // 1) Guardamos descripción para el Resumen y vaciamos el textarea
+        setSummaryDescription(description);
+        setDescription("");
+
+        // 2) Inserta el reporte en machine_reports
+        await insertUserReport({
+          machine_id: selectedMachine,
+          user_id: user.id,
+          report_date: reportDate,
+          description: summaryDescription, // o description original, según prefieras
         });
 
-        // 2) Recarga “Mis reportes” para mostrarlo de inmediato
+        // 3) Recarga “Mis reportes” para mostrarlo de inmediato
         const myReps = await fetchUserReports(user.id);
-        setMyReports(myReps);
+        setMyReports(myReps);  // Asegurarte de recargar los reportes del colaborador
 
-        // 3) Limpia el formulario de colaborador
+        // 4) Limpia el formulario de colaborador
         setSelectedMachine("");
         setReportDate(new Date().toISOString().slice(0, 10));
         setDescription("");
@@ -433,7 +433,6 @@ useEffect(() => {
           {myReports.length > 0 && (
             <div className="mt-8">
               <h3 className="text-xl font-semibold mb-4">Mis reportes enviados</h3>
-              {/* Contenedor responsive */}
               <div className="overflow-x-auto">
                 <table className="min-w-full table-auto border">
                   <thead className="bg-gray-100">
@@ -449,10 +448,8 @@ useEffect(() => {
                       <tr key={r.id} className="border-t hover:bg-gray-50">
                         <td className="p-2 border">{r.machines.name}</td>
                         <td className="p-2 border">{r.report_date}</td>
-                        <td className="p-2 border">{r.description}</td>
-                        <td className="p-2 border">
-                          {new Date(r.created_at).toLocaleString()}
-                        </td>
+                        <td className="p-2 border">{r.description}</td> {/* Mostrar la descripción */}
+                        <td className="p-2 border">{new Date(r.created_at).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
