@@ -171,25 +171,6 @@ export default function ProductForm() {
           )}
         </div>
 
-        {/* Menú desplegable para seleccionar la máquina */}
-        <div>
-          <label className="block text-gray-700">Seleccionar Máquina</label>
-          <select
-            name="machine_id"
-            value={product.machine_id || ""}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-            required
-          >
-            <option value="" disabled>Selecciona una máquina</option>
-            {machines.map((machine) => (
-              <option key={machine.id} value={machine.id}>
-                {machine.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
         {/* Campo de fecha de expiración */}
         <div>
           <label className="block text-gray-700">Fecha de Expiración</label>
@@ -202,9 +183,25 @@ export default function ProductForm() {
           />
         </div>
 
-        <button type="submit" className="bg-primary text-white px-4 py-2 rounded">
-          {id ? "Actualizar" : "Crear"}
-        </button>
+        <div className="flex gap-4 pt-2">
+          <button
+            type="submit"
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark"
+          >
+            {id ? "Actualizar" : "Crear"}
+          </button>
+          <button
+            type="button"
+            className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+            onClick={() => {
+              const confirm = window.confirm("¿Estás seguro de cancelar? Se perderán los cambios.");
+              if (confirm) navigate("/products");
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+        
       </form>
     </div>
   );

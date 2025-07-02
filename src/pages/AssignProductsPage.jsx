@@ -1,22 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { fetchProducts, updateProductStock } from "../services/productService"; // Importamos updateProductStock para modificar el stock
-import { assignProductToMachine } from "../services/machineService"; 
+import { fetchProducts, updateProductStock } from "../services/productService";
+import { assignProductToMachine, removeProductFromMachine } from "../services/machineService";
 import { useNavigate, useParams } from "react-router-dom";
+import { fetchAssignedProductsToMachine } from "../services/machineService"; // Asegúrate de tener esta función
 
 export default function AssignProductsPage() {
   const { machineId } = useParams();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [quantities, setQuantities] = useState({}); // Para almacenar las cantidades asignadas por producto
+  const [quantities, setQuantities] = useState({});
   const [loading, setLoading] = useState(true);
+  const [assignedProducts, setAssignedProducts] = useState([]);
 
-  // Cargar los productos
+  // Cargar los productos y los productos asignados a esta máquina
   useEffect(() => {
     const loadProducts = async () => {
       try {
         const data = await fetchProducts();
         setProducts(data);
+
+        // Obtener los productos asignados a esta máquina desde Supabase
+        const assignedData = await fetchAssignedProductsToMachine(machineId);
+        setAssignedProducts(assignedData);
       } catch (error) {
         console.error("Error al cargar productos:", error);
       } finally {
@@ -24,7 +30,12 @@ export default function AssignProductsPage() {
       }
     };
     loadProducts();
-  }, []);
+  }, [machineId]);
+
+  // Verifica si el producto ya está asignado a la máquina
+  const isProductAssigned = (productId) => {
+    return assignedProducts.some((product) => product.id === productId);
+  };
 
   // Manejar selección de producto
   const handleSelectProduct = (productId) => {
@@ -41,26 +52,57 @@ export default function AssignProductsPage() {
     }));
   };
 
-  // Manejo del submit
+  // Manejo del submit (asignar productos)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Asignar productos y actualizar stock
       await Promise.all(
-        selectedProducts.map((productId) => {
+        selectedProducts.map(async (productId) => {
           const quantity = quantities[productId] || 1; // Default quantity to 1 if none entered
-          assignProductToMachine(machineId, productId, quantity);
-          updateProductStock(productId, quantity); // Actualizar stock en la tabla de productos
+
+          // Primero, asignamos el producto a la máquina
+          await assignProductToMachine(machineId, productId, quantity);
+
+          // Luego, actualizamos el stock de ese producto
+          await updateProductStock(productId, quantity); // Actualizar stock en la tabla de productos
         })
       );
+
+      // Actualizamos los productos asignados
+      const updatedAssignedProducts = await fetchAssignedProductsToMachine(machineId);
+      setAssignedProducts(updatedAssignedProducts);
 
       navigate(`/machines/${machineId}/products`);
     } catch (error) {
       console.error("Error al asignar productos:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Desasignar producto
+  const handleRemoveProduct = async (productId) => {
+    try {
+      // Remover producto de la máquina
+      await removeProductFromMachine(machineId, productId);
+
+      // Encontrar el producto en el array de productos
+      const product = products.find((p) => p.id === productId);
+      if (product) {
+        // Aquí le pasamos una cantidad negativa para restar del stock
+        const quantityToUpdate = product.stock; // Restar el stock completo del producto
+
+        // Actualizar el stock
+        updateProductStock(productId, -quantityToUpdate); // Pasamos cantidad negativa
+      }
+
+      // Actualizamos los productos asignados
+      const updatedAssignedProducts = await fetchAssignedProductsToMachine(machineId);
+      setAssignedProducts(updatedAssignedProducts);
+    } catch (error) {
+      console.error("Error al desasignar producto:", error);
     }
   };
 
@@ -73,24 +115,8 @@ export default function AssignProductsPage() {
         <div>
           <h3 className="text-xl">Selecciona los productos:</h3>
           {products.map((product) => {
-            // Filtramos los productos que ya están asignados a la máquina
-            if (product.machine_id === machineId) {
-              return (
-                <div key={product.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={product.id}
-                    value={product.id}
-                    disabled // Deshabilitar si ya está asignado
-                    checked={selectedProducts.includes(product.id)}
-                    onChange={() => handleSelectProduct(product.id)}
-                    className="mr-2"
-                  />
-                  <label htmlFor={product.id}>{product.name}</label>
-                  <span className="ml-2 text-gray-500">(Producto ya asignado)</span>
-                </div>
-              );
-            }
+            const isAssigned = isProductAssigned(product.id);
+
             return (
               <div key={product.id} className="flex items-center">
                 <input
@@ -99,12 +125,16 @@ export default function AssignProductsPage() {
                   value={product.id}
                   checked={selectedProducts.includes(product.id)}
                   onChange={() => handleSelectProduct(product.id)}
+                  disabled={isAssigned} // Deshabilitar si ya está asignado
                   className="mr-2"
                 />
                 <label htmlFor={product.id}>{product.name}</label>
 
-                {/* Permitir ingresar la cantidad */}
-                {selectedProducts.includes(product.id) && (
+                {/* Si el producto ya está asignado, mostramos un mensaje */}
+                {isAssigned && <span className="ml-2 text-gray-500">(Producto ya asignado)</span>}
+
+                {/* Permitir ingresar la cantidad si el producto está seleccionado */}
+                {!isAssigned && selectedProducts.includes(product.id) && (
                   <input
                     type="number"
                     min="1"
@@ -113,6 +143,17 @@ export default function AssignProductsPage() {
                     onChange={(e) => handleQuantityChange(product.id, e.target.value)}
                     className="ml-2 border p-1 rounded w-24"
                   />
+                )}
+
+                {/* Si el producto ya está asignado, mostrar opción para desasignar */}
+                {isAssigned && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveProduct(product.id)}
+                    className="ml-2 text-red-500 hover:underline"
+                  >
+                    Desasignar
+                  </button>
                 )}
               </div>
             );

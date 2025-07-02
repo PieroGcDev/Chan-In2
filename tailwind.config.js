@@ -12,10 +12,19 @@ module.exports = {
       borderRadius: {
         DEFAULT: "0.5rem",
       },
+      // 👇 Agrega esto
+      keyframes: {
+        strongPulse: {
+          "0%, 100%": { opacity: "0.1" },
+          "50%": { opacity: "1" },
+        },
+      },
+      animation: {
+        strongPulse: "strongPulse 1s ease-in-out infinite",
+      },
     },
   },
   plugins: [
     require('tailwindcss-filters')
   ],
 };
-// tailwind.config.js

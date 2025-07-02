@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import dayjs from "dayjs";
 import { fetchProducts, deleteProduct, addProduct } from "../services/productService";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { fetchMachines } from "../services/machineService"; // Servicio para obtener las máquinas
+import { AlertTriangle } from "lucide-react";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -62,7 +64,6 @@ export default function ProductsPage() {
     const newProduct = {
       name: form.get("name"),
       stock: form.get("stock"),
-      machine_id: form.get("machine_id"),
     };
 
     try {
@@ -139,7 +140,49 @@ export default function ProductsPage() {
                   <td className="p-2">{p.stock}</td>
                   <td className="p-2">{p.price ?? "$0.00"}</td>
                   <td className="p-2">{p.barcode}</td>
-                  <td className="p-2">{p.expiration_date || "No especificada"}</td>
+                  <td className="p-2 flex items-center gap-2">
+                    {p.expiration_date ? (
+                      <>
+                        {new Date(p.expiration_date).toLocaleDateString()}
+                        {(() => {
+                          const today = dayjs();
+                          const expiration = dayjs(p.expiration_date);
+                          const daysLeft = expiration.diff(today, "day");
+                          if (daysLeft <= 7 && daysLeft >= 0) {
+                            return (
+                              <span
+                                title={`Faltan ${daysLeft} día${daysLeft === 1 ? "" : "s"}`}
+                                className="inline-flex"
+                              >
+                                <AlertTriangle
+                                  className="text-orange-500"
+                                  size={22}
+                                />
+                              </span>
+                            );
+                          }
+
+                          if (daysLeft < 0) {
+                            return (
+                              <span
+                                title="Producto vencido"
+                                className="inline-flex"
+                              >
+                                <AlertTriangle
+                                  className="text-red-500 animate-strongPulse"
+                                  size={22}
+                                />
+                              </span>
+                            );
+                          }
+                          
+                          return null;
+                        })()}
+                      </>
+                    ) : (
+                      <span className="text-gray-400 italic">No especificada</span>
+                    )}
+                  </td>
                   <td className="p-2">
                     {machines.find((machine) => machine.id === p.machine_id)?.name || "No asignada"}
                   </td>
