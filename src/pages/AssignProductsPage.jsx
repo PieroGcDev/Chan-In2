@@ -34,7 +34,7 @@ export default function AssignProductsPage() {
 
   // Verifica si el producto ya está asignado a la máquina
   const isProductAssigned = (productId) => {
-    return assignedProducts.some((product) => product.id === productId);
+    return assignedProducts.some((item) => item.product.id === productId);
   };
 
   // Manejar selección de producto
@@ -66,7 +66,7 @@ export default function AssignProductsPage() {
           await assignProductToMachine(machineId, productId, quantity);
 
           // Luego, actualizamos el stock de ese producto
-          await updateProductStock(productId, quantity); // Actualizar stock en la tabla de productos
+          await updateProductStock(productId, -quantity); // Actualizar stock en la tabla de productos
         })
       );
 
@@ -88,15 +88,9 @@ export default function AssignProductsPage() {
       // Remover producto de la máquina
       await removeProductFromMachine(machineId, productId);
 
-      // Encontrar el producto en el array de productos
-      const product = products.find((p) => p.id === productId);
-      if (product) {
-        // Aquí le pasamos una cantidad negativa para restar del stock
-        const quantityToUpdate = product.stock; // Restar el stock completo del producto
-
-        // Actualizar el stock
-        updateProductStock(productId, -quantityToUpdate); // Pasamos cantidad negativa
-      }
+      const assigned = assignedProducts.find((p) => p.product.id === productId);
+      const quantityToRestore = assigned?.stock || 0;
+      await updateProductStock(productId, quantityToRestore); // Restaurar stock global
 
       // Actualizamos los productos asignados
       const updatedAssignedProducts = await fetchAssignedProductsToMachine(machineId);

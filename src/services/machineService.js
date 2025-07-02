@@ -39,11 +39,10 @@ export const updateMachine = async (id, machine) => {
   return data;
 };
 
-// Asignar producto a una máquina
-export const assignProductToMachine = async (machineId, productId) => {
+export const assignProductToMachine = async (machineId, productId, stock) => {
   const { data, error } = await supabase
-    .from("machine_products") // Tabla de relación entre máquinas y productos
-    .insert([{ machine_id: machineId, product_id: productId }]);
+    .from("machine_products")
+    .insert([{ machine_id: machineId, product_id: productId, stock }]);
 
   if (error) throw error;
   return data;
@@ -61,14 +60,19 @@ export const removeProductFromMachine = async (machineId, productId) => {
   return data;
 };
 
-// Obtener los productos asignados a una máquina
+// Obtener los productos asignados a una máquina, con stock asignado
 export const fetchAssignedProductsToMachine = async (machineId) => {
   const { data, error } = await supabase
-    .from("machine_products") // Tabla que asocia productos y máquinas
-    .select("product_id") // Solo obtenemos los IDs de los productos
+    .from("machine_products") // Tabla intermedia
+    .select(`
+      product_id,
+      stock,
+      product:products (id, name, sku, image_url, price)
+    `)
     .eq("machine_id", machineId);
 
   if (error) throw error;
+  return data;
 
   // Recuperamos los detalles de los productos asignados
   const productIds = data.map(item => item.product_id);
