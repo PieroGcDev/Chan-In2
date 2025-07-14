@@ -49,7 +49,7 @@ export default function MachineProductsPage() {
             {products.map((product) => (
               <tr key={product.id} className="border-b hover:bg-gray-50">
                 <td className="p-3 border">{product.name}</td>
-                <td className="p-3 border">{product.stock}</td>
+                <td className="p-3 border">{product.assigned_stock}</td>
               </tr>
             ))}
           </tbody>

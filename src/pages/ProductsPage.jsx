@@ -151,7 +151,7 @@ export default function ProductsPage() {
                           if (daysLeft <= 7 && daysLeft >= 0) {
                             return (
                               <span
-                                title={`Faltan ${daysLeft} día${daysLeft === 1 ? "" : "s"}`}
+                                title={`Vence en ${daysLeft} día${daysLeft === 1 ? "" : "s"}`}
                                 className="inline-flex"
                               >
                                 <AlertTriangle

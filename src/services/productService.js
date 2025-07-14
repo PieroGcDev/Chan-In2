@@ -62,55 +62,51 @@ export const fetchProductByBarcode = async (barcode) => {
   return data;
 };
 
-// Obtener productos asignados a una máquina por su ID (ajustado para no usar machine_id directamente)
 export const fetchMachineProducts = async (machineId) => {
   const { data, error } = await supabase
-    .from("machine_products") // Usamos la tabla de relación para obtener los productos
-    .select("product_id")
+    .from("machine_products")
+    .select(`
+      assigned_stock,
+      product:products (
+        id, name, image_url, price
+      )
+    `)
     .eq("machine_id", machineId);
 
   if (error) throw error;
 
-  const productIds = data.map(item => item.product_id);
-  const { data: products, error: productError } = await supabase
-    .from("products")
-    .select("*")
-    .in("id", productIds);
-
-  if (productError) throw productError;
-  return products;
+  return data.map((item) => ({
+    ...item.product,
+    assigned_stock: item.assigned_stock,
+  }));
 };
+
 
 // Actualizar el stock de un producto
 export const updateProductStock = async (productId, quantity) => {
-  // Verificamos que la cantidad sea un número válido
-  if (isNaN(quantity) || quantity <= 0) {
-    throw new Error("La cantidad debe ser un número mayor que 0");
+  if (isNaN(quantity)) {
+    throw new Error("La cantidad debe ser un número válido");
   }
 
   try {
-    // Primero obtenemos el producto y su stock actual
     const { data: product, error: fetchError } = await supabase
       .from("products")
       .select("stock")
       .eq("id", productId)
-      .single();  // Usamos `single()` para obtener solo un producto
+      .single();
 
     if (fetchError) throw fetchError;
 
-    // Restamos la cantidad del stock actual
-    const newStock = product.stock - quantity;
+    const newStock = product.stock + quantity;
 
-    // Si el nuevo stock es negativo, lanzamos un error
     if (newStock < 0) {
       throw new Error("No hay suficiente stock disponible.");
     }
 
-    // Actualizamos el stock en la base de datos
     const { data, error } = await supabase
       .from("products")
       .update({ stock: newStock })
-      .eq("id", productId);  // Identificamos el producto por su ID
+      .eq("id", productId);
 
     if (error) throw error;
 
