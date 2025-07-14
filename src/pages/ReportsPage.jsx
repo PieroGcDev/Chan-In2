@@ -221,7 +221,7 @@ useEffect(() => {
           machine_id: selectedMachine,
           user_id: user.id,
           report_date: reportDate,
-          description: summaryDescription, // o description original, según prefieras
+          description,
         });
 
         // 3) Recarga “Mis reportes” para mostrarlo de inmediato
@@ -280,7 +280,7 @@ useEffect(() => {
           user_id: selectedUser,
           dateFrom,
           dateTo,
-          description: summaryDescription,
+          description,
         });
 
         // 2.4) Mostramos en pantalla el resultado del conteo
@@ -318,7 +318,7 @@ useEffect(() => {
         await insertAnnualValueReport({
           year,
           totalValue: total,
-          description: summaryDescription,
+          description,
         });
 
         // 3.4) Mostramos en pantalla el total
