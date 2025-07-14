@@ -3,18 +3,23 @@ import dayjs from "dayjs";
 import { fetchProducts, deleteProduct, addProduct } from "../services/productService";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
-import { fetchMachines } from "../services/machineService"; // Servicio para obtener las máquinas
+import { fetchMachines } from "../services/machineService";
 import { AlertTriangle } from "lucide-react";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
-  const [machines, setMachines] = useState([]); // Estado para las máquinas
+  const [machines, setMachines] = useState([]);
   const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState("name-asc");
   const navigate = useNavigate();
   const { user } = useUser();
   const role = user?.role || "guest";
 
-  // Cargar los productos
+  useEffect(() => {
+    loadProducts();
+    loadMachines();
+  }, []);
+
   const loadProducts = async () => {
     try {
       const data = await fetchProducts();
@@ -24,7 +29,6 @@ export default function ProductsPage() {
     }
   };
 
-  // Cargar las máquinas
   const loadMachines = async () => {
     try {
       const data = await fetchMachines();
@@ -33,11 +37,6 @@ export default function ProductsPage() {
       console.error("Error al cargar máquinas:", err);
     }
   };
-
-  useEffect(() => {
-    loadProducts();
-    loadMachines(); // Llamar a la carga de máquinas cuando se monta el componente
-  }, []);
 
   const handleDelete = async (id) => {
     const confirm = window.confirm("¿Seguro que deseas eliminar este producto?");
@@ -51,29 +50,33 @@ export default function ProductsPage() {
     }
   };
 
-  const filtered = products.filter(
-    (p) =>
+  const handleSortChange = (e) => {
+    setSortOrder(e.target.value);
+  };
+
+  const filtered = products
+    .filter((p) =>
       p.name?.toLowerCase().includes(search.toLowerCase()) ||
       p.sku?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Manejar el formulario de añadir producto
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const form = new FormData(e.target);
-    const newProduct = {
-      name: form.get("name"),
-      stock: form.get("stock"),
-    };
-
-    try {
-      await addProduct(newProduct); // Llamada a la función de añadir producto
-      await loadProducts(); // Recargar productos
-      navigate("/products"); // Redirigir a la página de productos
-    } catch (err) {
-      console.error("Error al añadir producto:", err);
-    }
-  };
+    )
+    .sort((a, b) => {
+      switch (sortOrder) {
+        case "name-asc":
+          return a.name.localeCompare(b.name);
+        case "name-desc":
+          return b.name.localeCompare(a.name);
+        case "price-asc":
+          return (a.price || 0) - (b.price || 0);
+        case "price-desc":
+          return (b.price || 0) - (a.price || 0);
+        case "date-asc":
+          return new Date(a.created_at) - new Date(b.created_at);
+        case "date-desc":
+          return new Date(b.created_at) - new Date(a.created_at);
+        default:
+          return 0;
+      }
+    });
 
   return (
     <div className="bg-bg-light min-h-screen p-6">
@@ -90,17 +93,34 @@ export default function ProductsPage() {
           )}
         </div>
 
-        <div className="flex mb-4">
-          <input
-            type="text"
-            placeholder="Buscar por nombre o SKU"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 p-2 border border-gray-200 rounded-l"
-          />
-          <button className="bg-primary hover:bg-primary-dark text-white px-4 rounded-r">
-            🔍
-          </button>
+        <div className="flex flex-col md:flex-row md:items-center md:gap-4 mb-4">
+          <div className="flex flex-1">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o SKU"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 p-2 border border-gray-200 rounded-l"
+            />
+            <button className="bg-primary hover:bg-primary-dark text-white px-4 rounded-r">
+              🔍
+            </button>
+          </div>
+
+          <div className="mt-2 md:mt-0">
+            <select
+              value={sortOrder}
+              onChange={handleSortChange}
+              className="border p-2 rounded"
+            >
+              <option value="name-asc">Nombre (A-Z)</option>
+              <option value="name-desc">Nombre (Z-A)</option>
+              <option value="price-asc">Precio (menor a mayor)</option>
+              <option value="price-desc">Precio (mayor a menor)</option>
+              <option value="date-desc">Más recientes</option>
+              <option value="date-asc">Más antiguos</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -154,28 +174,17 @@ export default function ProductsPage() {
                                 title={`Vence en ${daysLeft} día${daysLeft === 1 ? "" : "s"}`}
                                 className="inline-flex"
                               >
-                                <AlertTriangle
-                                  className="text-orange-500"
-                                  size={22}
-                                />
+                                <AlertTriangle className="text-orange-500" size={22} />
                               </span>
                             );
                           }
-
                           if (daysLeft < 0) {
                             return (
-                              <span
-                                title="Producto vencido"
-                                className="inline-flex"
-                              >
-                                <AlertTriangle
-                                  className="text-red-500 animate-strongPulse"
-                                  size={22}
-                                />
+                              <span title="Producto vencido" className="inline-flex">
+                                <AlertTriangle className="text-red-500 animate-strongPulse" size={22} />
                               </span>
                             );
                           }
-                          
                           return null;
                         })()}
                       </>
